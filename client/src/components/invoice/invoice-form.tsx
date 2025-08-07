@@ -26,8 +26,8 @@ const createInvoiceFormSchema = (invoiceType?: string) => z.object({
     previousReading: invoiceType === "commercial" ? z.string().min(1, "يجب إدخال القراءة السابقة") : z.string().optional(),
     currentReading: invoiceType === "commercial" ? z.string().min(1, "يجب إدخال القراءة الحالية") : z.string().optional(),
     unitPrice: invoiceType === "commercial" ? z.string().min(1, "يجب إدخال قيمة الوحدة") : z.string().optional(),
-    // Regular price field - only required for non-commercial invoices
-    price: invoiceType === "commercial" ? z.string().optional() : z.string().min(1, "يجب إدخال السعر").refine(val => parseFloat(val) > 0, "السعر يجب أن يكون أكبر من صفر"),
+    // Regular price field - optional for commercial invoices (auto-calculated)
+    price: z.string().optional(),
   })).min(1, "يجب إضافة عنصر واحد على الأقل"),
   discount: z.string().optional(),
 });
@@ -64,8 +64,8 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
         previousReading: item.previousReading || "",
         currentReading: item.currentReading || "",
         unitPrice: item.unitPrice || "",
-        price: item.price,
-      })) : [{ description: "", documentNumber: "", meterNumber: "", previousReading: "", currentReading: "", unitPrice: "", price: "" }],
+        price: item.price || "0",
+      })) : [{ description: "", documentNumber: "", meterNumber: "", previousReading: "", currentReading: "", unitPrice: "", price: "0" }],
     },
   });
 
@@ -128,18 +128,27 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
   useEffect(() => {
     let newSubtotal = 0;
     
-    watchedItems?.forEach((item, index) => {
+    watchedItems?.forEach((item: any, index: number) => {
       // For commercial meter items, calculate based on meter readings
       if (invoiceType === "commercial" && item.previousReading && item.currentReading && item.unitPrice) {
         const previousReading = parseFloat(item.previousReading) || 0;
         const currentReading = parseFloat(item.currentReading) || 0;
         const unitPrice = parseFloat(item.unitPrice) || 0;
-        const consumption = currentReading - previousReading;
-        const calculatedTotal = consumption * unitPrice;
         
-        // Update the price field with calculated total
-        form.setValue(`items.${index}.price`, calculatedTotal.toFixed(2));
-        newSubtotal += calculatedTotal;
+        if (currentReading >= previousReading && unitPrice > 0) {
+          const consumption = currentReading - previousReading;
+          const calculatedTotal = consumption * unitPrice;
+          
+          // Update the price field with calculated total without triggering infinite loop
+          const currentPrice = parseFloat(item.price) || 0;
+          if (Math.abs(currentPrice - calculatedTotal) > 0.01) {
+            form.setValue(`items.${index}.price`, calculatedTotal.toFixed(2), { shouldValidate: false });
+          }
+          newSubtotal += calculatedTotal;
+        } else {
+          const price = parseFloat(item.price) || 0;
+          newSubtotal += price;
+        }
       } else {
         // Regular calculation for non-meter items
         const price = parseFloat(item.price) || 0;
@@ -173,7 +182,7 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
       notes: data.notes || "",
     };
 
-    const items = data.items.map(item => ({
+    const items = data.items.map((item: any) => ({
       description: item.description,
       documentNumber: item.documentNumber || null,
       meterNumber: item.meterNumber || null,
@@ -432,7 +441,6 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
                       placeholder="الإجمالي (﷼)"
                       className="text-sm bg-gray-100"
                       readOnly
-                      value={watchedItems?.[index]?.price || ""}
                       data-testid={`input-item-price-${index}`}
                     />
                   </div>

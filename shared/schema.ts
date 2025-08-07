@@ -39,8 +39,8 @@ export const invoiceItems = pgTable("invoice_items", {
   previousReading: decimal("previous_reading", { precision: 10, scale: 2 }), // القراءة السابقة
   currentReading: decimal("current_reading", { precision: 10, scale: 2 }), // القراءة الحالية
   unitPrice: decimal("unit_price", { precision: 10, scale: 2 }), // قيمة الوحدة
-  // Regular fields
-  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  // Regular fields - price can be null for commercial invoices (auto-calculated)
+  price: decimal("price", { precision: 10, scale: 2 }).notNull().default("0"),
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
 });
 

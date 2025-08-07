@@ -6,7 +6,10 @@ import { z } from "zod";
 
 const createInvoiceWithItemsSchema = z.object({
   invoice: insertInvoiceSchema,
-  items: z.array(insertInvoiceItemSchema.omit({ invoiceId: true }))
+  items: z.array(insertInvoiceItemSchema.omit({ invoiceId: true }).extend({
+    // Allow price to be optional for commercial invoices
+    price: z.string().optional().default("0")
+  }))
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {

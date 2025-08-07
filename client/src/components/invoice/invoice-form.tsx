@@ -349,15 +349,8 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
                     data-testid={`input-item-price-${index}`}
                   />
                 </div>
-                <div className="col-span-2">
-                  <Input
-                    value={`₪${((parseFloat(watchedItems[index]?.quantity) || 0) * (parseFloat(watchedItems[index]?.price) || 0)).toFixed(2)}`}
-                    readOnly
-                    className="bg-gray-100 text-sm"
-                    data-testid={`text-item-total-${index}`}
-                  />
-                </div>
-                <div className="col-span-1">
+                
+                <div className="col-span-3">
                   {fields.length > 1 && (
                     <Button
                       type="button"

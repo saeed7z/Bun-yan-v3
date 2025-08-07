@@ -338,16 +338,7 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
                     data-testid={`input-item-description-${index}`}
                   />
                 </div>
-                <div className="col-span-2">
-                  <Input
-                    {...form.register(`items.${index}.quantity`)}
-                    type="number"
-                    step="0.01"
-                    placeholder="الكمية"
-                    className="text-sm"
-                    data-testid={`input-item-quantity-${index}`}
-                  />
-                </div>
+
                 <div className="col-span-2">
                   <Input
                     {...form.register(`items.${index}.price`)}

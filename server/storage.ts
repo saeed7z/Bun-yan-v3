@@ -14,7 +14,7 @@ export interface IStorage {
   getInvoices(): Promise<Invoice[]>;
   getInvoice(id: string): Promise<Invoice | undefined>;
   getInvoiceWithDetails(id: string): Promise<InvoiceWithCustomer | undefined>;
-  createInvoice(invoice: InsertInvoice, items: InsertInvoiceItem[]): Promise<InvoiceWithCustomer>;
+  createInvoice(invoice: InsertInvoice, items: Omit<InsertInvoiceItem, 'invoiceId'>[]): Promise<InvoiceWithCustomer>;
   updateInvoice(id: string, invoice: Partial<InsertInvoice>): Promise<Invoice | undefined>;
   deleteInvoice(id: string): Promise<boolean>;
   getInvoicesByCustomer(customerId: string): Promise<Invoice[]>;
@@ -83,7 +83,6 @@ export class MemStorage implements IStorage {
       notes: "فاتورة خدمات استشارية"
     }, [
       {
-        invoiceId: "", // Will be set in createInvoice
         description: "استشارات تطوير الأعمال",
         quantity: "20",
         price: "138.89",
@@ -105,7 +104,6 @@ export class MemStorage implements IStorage {
       notes: ""
     }, [
       {
-        invoiceId: "",
         description: "خدمات تسويق رقمي",
         quantity: "15",
         price: "106.84",
@@ -127,7 +125,6 @@ export class MemStorage implements IStorage {
       notes: "خدمات تقنية متقدمة"
     }, [
       {
-        invoiceId: "",
         description: "تطوير نظام إدارة",
         quantity: "25",
         price: "185.30",
@@ -219,7 +216,7 @@ export class MemStorage implements IStorage {
     };
   }
 
-  async createInvoice(insertInvoice: InsertInvoice, items: InsertInvoiceItem[]): Promise<InvoiceWithCustomer> {
+  async createInvoice(insertInvoice: InsertInvoice, items: Omit<InsertInvoiceItem, 'invoiceId'>[]): Promise<InvoiceWithCustomer> {
     const id = randomUUID();
     const invoice: Invoice = {
       number: insertInvoice.number,

@@ -14,7 +14,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { insertInvoiceSchema, insertInvoiceItemSchema } from "@shared/schema";
 
-const invoiceFormSchema = z.object({
+const createInvoiceFormSchema = (invoiceType?: string) => z.object({
   customerId: z.string().min(1, "يجب اختيار العميل"),
   date: z.string().min(1, "يجب تحديد التاريخ"),
   notes: z.string().optional(),
@@ -22,12 +22,12 @@ const invoiceFormSchema = z.object({
     description: z.string().min(1, "يجب إدخال وصف الخدمة"),
     documentNumber: z.string().optional(),
     // Commercial meter fields
-    meterNumber: z.string().optional(),
-    previousReading: z.string().optional(),
-    currentReading: z.string().optional(),
-    unitPrice: z.string().optional(),
-    // Regular price field
-    price: z.string().min(1, "يجب إدخال السعر").refine(val => parseFloat(val) > 0, "السعر يجب أن يكون أكبر من صفر"),
+    meterNumber: invoiceType === "commercial" ? z.string().min(1, "يجب إدخال رقم العداد") : z.string().optional(),
+    previousReading: invoiceType === "commercial" ? z.string().min(1, "يجب إدخال القراءة السابقة") : z.string().optional(),
+    currentReading: invoiceType === "commercial" ? z.string().min(1, "يجب إدخال القراءة الحالية") : z.string().optional(),
+    unitPrice: invoiceType === "commercial" ? z.string().min(1, "يجب إدخال قيمة الوحدة") : z.string().optional(),
+    // Regular price field - only required for non-commercial invoices
+    price: invoiceType === "commercial" ? z.string().optional() : z.string().min(1, "يجب إدخال السعر").refine(val => parseFloat(val) > 0, "السعر يجب أن يكون أكبر من صفر"),
   })).min(1, "يجب إضافة عنصر واحد على الأقل"),
   discount: z.string().optional(),
 });
@@ -51,7 +51,7 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
   });
 
   const form = useForm<FormData>({
-    resolver: zodResolver(invoiceFormSchema),
+    resolver: zodResolver(createInvoiceFormSchema(invoiceType)),
     defaultValues: {
       customerId: invoice?.customerId || "",
       date: invoice?.date ? new Date(invoice.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
@@ -138,7 +138,7 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
         const calculatedTotal = consumption * unitPrice;
         
         // Update the price field with calculated total
-        form.setValue(`items.${index}.price`, calculatedTotal.toString());
+        form.setValue(`items.${index}.price`, calculatedTotal.toFixed(2));
         newSubtotal += calculatedTotal;
       } else {
         // Regular calculation for non-meter items
@@ -156,7 +156,7 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
     setSubtotal(newSubtotal);
     setTax(newTax);
     setTotal(newTotal);
-  }, [watchedItems, watchedDiscount]);
+  }, [watchedItems, watchedDiscount, invoiceType, form]);
 
   const onSubmit = (data: FormData) => {
     const invoiceData = {
@@ -180,8 +180,8 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
       previousReading: item.previousReading || null,
       currentReading: item.currentReading || null,
       unitPrice: item.unitPrice || null,
-      price: item.price,
-      total: parseFloat(item.price).toFixed(2),
+      price: item.price || "0",
+      total: parseFloat(item.price || "0").toFixed(2),
     }));
 
     if (invoice) {
@@ -432,6 +432,7 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
                       placeholder="الإجمالي (﷼)"
                       className="text-sm bg-gray-100"
                       readOnly
+                      value={watchedItems?.[index]?.price || ""}
                       data-testid={`input-item-price-${index}`}
                     />
                   </div>

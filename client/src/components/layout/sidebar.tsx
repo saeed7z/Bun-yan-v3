@@ -1,11 +1,13 @@
 import { Link, useLocation } from "wouter";
-import { Calculator, BarChart3, Users, FileText, Settings, LogOut } from "lucide-react";
+import { Calculator, BarChart3, Users, FileText, TrendingUp, TrendingDown, Settings, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navigation = [
   { name: "لوحة التحكم", href: "/dashboard", icon: BarChart3, testId: "nav-dashboard" },
   { name: "الحسابات", href: "/customers", icon: Users, testId: "nav-customers" },
   { name: "الفواتير", href: "/invoices", icon: FileText, testId: "nav-invoices" },
+  { name: "الإيرادات", href: "/revenues", icon: TrendingUp, testId: "nav-revenues" },
+  { name: "المصروفات", href: "/expenses", icon: TrendingDown, testId: "nav-expenses" },
 ];
 
 const secondaryNavigation = [

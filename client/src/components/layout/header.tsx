@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import InvoiceForm from "@/components/invoice/invoice-form";
 import { useLocation } from "wouter";
 
@@ -11,11 +12,14 @@ const pageConfig = {
   "/dashboard": { title: "لوحة التحكم", subtitle: "نظرة عامة على أداء أعمالك" },
   "/customers": { title: "إدارة الحسابات", subtitle: "إدارة حسابات العملاء والموردين" },
   "/invoices": { title: "إدارة الفواتير", subtitle: "إنشاء ومتابعة الفواتير" },
+  "/revenues": { title: "الإيرادات", subtitle: "متابعة وإدارة جميع الإيرادات" },
+  "/expenses": { title: "المصروفات", subtitle: "متابعة وإدارة جميع المصروفات" },
 };
 
 export default function Header() {
   const [location] = useLocation();
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [selectedInvoiceType, setSelectedInvoiceType] = useState("monthly");
   const [searchQuery, setSearchQuery] = useState("");
 
   const config = pageConfig[location as keyof typeof pageConfig] || pageConfig["/"];
@@ -34,18 +38,58 @@ export default function Header() {
           </div>
           
           <div className="flex items-center space-x-reverse space-x-4">
-            <Dialog open={isInvoiceModalOpen} onOpenChange={setIsInvoiceModalOpen}>
-              <DialogTrigger asChild>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <Button className="bg-primary text-white hover:bg-blue-700" data-testid="button-new-invoice">
                   <Plus className="ml-2" size={16} />
                   فاتورة جديدة
+                  <ChevronDown className="mr-2" size={16} />
                 </Button>
-              </DialogTrigger>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem 
+                  onClick={() => {
+                    setSelectedInvoiceType("monthly");
+                    setIsInvoiceModalOpen(true);
+                  }}
+                  data-testid="menu-monthly-fees"
+                >
+                  الرسوم الشهرية
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => {
+                    setSelectedInvoiceType("commercial");
+                    setIsInvoiceModalOpen(true);
+                  }}
+                  data-testid="menu-commercial-meter"
+                >
+                  فاتورة العداد التجاري
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => {
+                    setSelectedInvoiceType("statement");
+                    setIsInvoiceModalOpen(true);
+                  }}
+                  data-testid="menu-customer-statement"
+                >
+                  كشف حساب العملاء
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            <Dialog open={isInvoiceModalOpen} onOpenChange={setIsInvoiceModalOpen}>
               <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
                 <DialogHeader>
-                  <DialogTitle>إنشاء فاتورة جديدة</DialogTitle>
+                  <DialogTitle>
+                    إنشاء {selectedInvoiceType === "monthly" ? "رسوم شهرية" : 
+                           selectedInvoiceType === "commercial" ? "فاتورة عداد تجاري" : 
+                           "كشف حساب العملاء"}
+                  </DialogTitle>
                 </DialogHeader>
-                <InvoiceForm onSuccess={() => setIsInvoiceModalOpen(false)} />
+                <InvoiceForm 
+                  invoiceType={selectedInvoiceType}
+                  onSuccess={() => setIsInvoiceModalOpen(false)} 
+                />
               </DialogContent>
             </Dialog>
             

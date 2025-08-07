@@ -17,7 +17,6 @@ import { insertInvoiceSchema, insertInvoiceItemSchema } from "@shared/schema";
 const invoiceFormSchema = z.object({
   customerId: z.string().min(1, "يجب اختيار العميل"),
   date: z.string().min(1, "يجب تحديد التاريخ"),
-  dueDate: z.string().optional(),
   notes: z.string().optional(),
   items: z.array(z.object({
     description: z.string().min(1, "يجب إدخال وصف الخدمة"),
@@ -31,10 +30,11 @@ type FormData = z.infer<typeof invoiceFormSchema>;
 
 interface InvoiceFormProps {
   invoice?: any;
+  invoiceType?: string;
   onSuccess: () => void;
 }
 
-export default function InvoiceForm({ invoice, onSuccess }: InvoiceFormProps) {
+export default function InvoiceForm({ invoice, invoiceType = "monthly", onSuccess }: InvoiceFormProps) {
   const { toast } = useToast();
   const [subtotal, setSubtotal] = useState(0);
   const [tax, setTax] = useState(0);
@@ -49,14 +49,13 @@ export default function InvoiceForm({ invoice, onSuccess }: InvoiceFormProps) {
     defaultValues: {
       customerId: invoice?.customerId || "",
       date: invoice?.date ? new Date(invoice.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-      dueDate: invoice?.dueDate ? new Date(invoice.dueDate).toISOString().split('T')[0] : "",
       notes: invoice?.notes || "",
       discount: invoice?.discount || "0",
-      items: invoice?.items?.map((item: any) => ({
+      items: invoice?.items ? invoice.items.map((item: any) => ({
         description: item.description,
         quantity: item.quantity,
         price: item.price,
-      })) || [{ description: "", quantity: "", price: "" }],
+      })) : [{ description: "", quantity: "", price: "" }],
     },
   });
 
@@ -66,7 +65,7 @@ export default function InvoiceForm({ invoice, onSuccess }: InvoiceFormProps) {
   });
 
   const watchedItems = form.watch("items");
-  const watchedDiscount = form.watch("discount");
+  const watchedDiscount = form.watch("discount") || "0";
 
   // Generate unique invoice number
   const generateInvoiceNumber = () => {
@@ -141,7 +140,7 @@ export default function InvoiceForm({ invoice, onSuccess }: InvoiceFormProps) {
       number: invoice?.number || generateInvoiceNumber(),
       customerId: data.customerId,
       date: new Date(data.date),
-      dueDate: data.dueDate ? new Date(data.dueDate) : null,
+      dueDate: null,
       status: invoice?.status || "pending",
       subtotal: subtotal.toFixed(2),
       tax: tax.toFixed(2),
@@ -155,6 +154,7 @@ export default function InvoiceForm({ invoice, onSuccess }: InvoiceFormProps) {
       quantity: item.quantity,
       price: item.price,
       total: (parseFloat(item.quantity) * parseFloat(item.price)).toFixed(2),
+      invoiceId: "", // Will be set in backend
     }));
 
     if (invoice) {
@@ -211,16 +211,6 @@ export default function InvoiceForm({ invoice, onSuccess }: InvoiceFormProps) {
         </div>
       </div>
 
-      <div>
-        <Label htmlFor="dueDate">تاريخ الاستحقاق</Label>
-        <Input
-          id="dueDate"
-          type="date"
-          {...form.register("dueDate")}
-          className="mt-1"
-          data-testid="input-due-date"
-        />
-      </div>
 
       {/* Invoice Items */}
       <div>

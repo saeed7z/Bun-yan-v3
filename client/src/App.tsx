@@ -7,6 +7,8 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import Customers from "@/pages/customers";
 import Invoices from "@/pages/invoices";
+import Revenues from "@/pages/revenues";
+import Expenses from "@/pages/expenses";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 
@@ -17,6 +19,8 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/customers" component={Customers} />
       <Route path="/invoices" component={Invoices} />
+      <Route path="/revenues" component={Revenues} />
+      <Route path="/expenses" component={Expenses} />
       <Route component={NotFound} />
     </Switch>
   );

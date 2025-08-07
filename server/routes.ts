@@ -190,17 +190,21 @@ function generateInvoiceHTML(invoice: any): string {
     <meta charset="UTF-8">
     <title>فاتورة ${invoice.number}</title>
     <style>
-        body { font-family: Arial, sans-serif; direction: rtl; margin: 40px; }
-        .header { text-align: center; margin-bottom: 30px; }
-        .invoice-details { margin: 20px 0; }
-        .items-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        .items-table th, .items-table td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        @page { size: A5; margin: 15mm; }
+        body { font-family: Arial, sans-serif; direction: rtl; margin: 0; font-size: 12px; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .invoice-details { margin: 15px 0; }
+        .items-table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        .items-table th, .items-table td { border: 1px solid #ddd; padding: 6px; text-align: center; font-size: 11px; }
         .items-table th { background-color: #f5f5f5; }
-        .totals { margin-top: 20px; text-align: left; }
-        .total-row { margin: 5px 0; }
+        .totals { margin-top: 15px; text-align: left; }
+        .total-row { margin: 3px 0; }
+        .print-button { position: fixed; top: 10px; left: 10px; z-index: 1000; }
+        @media print { .print-button { display: none; } }
     </style>
 </head>
 <body>
+    <button class="print-button" onclick="window.print()" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">طباعة سريعة</button>
     <div class="header">
         <h1>فاتورة</h1>
         <h2>${invoice.number}</h2>

@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Eye, Download, Trash2, Edit } from "lucide-react";
+import { Plus, Search, Eye, Download, Trash2, Edit, Printer } from "lucide-react";
 import InvoiceForm from "@/components/invoice/invoice-form";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -47,7 +47,8 @@ export default function Invoices() {
   });
 
   const getCustomerName = (customerId: string) => {
-    const customer = customers?.find((c: any) => c.id === customerId);
+    if (!customers || !Array.isArray(customers)) return "عميل غير معروف";
+    const customer = customers.find((c: any) => c.id === customerId);
     return customer?.name || "عميل غير معروف";
   };
 
@@ -66,12 +67,12 @@ export default function Invoices() {
     );
   };
 
-  const filteredInvoices = invoices?.filter((invoice: any) => {
+  const filteredInvoices = invoices && Array.isArray(invoices) ? invoices.filter((invoice: any) => {
     const matchesSearch = invoice.number.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          getCustomerName(invoice.customerId).toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || invoice.status === statusFilter;
     return matchesSearch && matchesStatus;
-  }) || [];
+  }) : [];
 
   const handleDeleteInvoice = async (invoiceId: string, invoiceNumber: string) => {
     if (window.confirm(`هل أنت متأكد من حذف الفاتورة "${invoiceNumber}"؟`)) {
@@ -102,6 +103,37 @@ export default function Invoices() {
       toast({
         title: "حدث خطأ",
         description: "فشل في تنزيل الفاتورة",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleQuickPrint = async (invoiceId: string) => {
+    try {
+      const response = await fetch(`/api/invoices/${invoiceId}/pdf`);
+      if (!response.ok) throw new Error('Failed to generate PDF');
+      
+      const htmlContent = await response.text();
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+        printWindow.focus();
+        
+        // Wait for content to load then print
+        setTimeout(() => {
+          printWindow.print();
+        }, 500);
+      }
+      
+      toast({
+        title: "تم فتح نافذة الطباعة",
+        description: "يمكنك الآن طباعة الفاتورة",
+      });
+    } catch (error) {
+      toast({
+        title: "حدث خطأ",
+        description: "فشل في فتح نافذة الطباعة",
         variant: "destructive",
       });
     }
@@ -212,6 +244,14 @@ export default function Invoices() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex space-x-reverse space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleQuickPrint(invoice.id)}
+                          data-testid={`button-quick-print-${invoice.id}`}
+                        >
+                          <Printer size={16} />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"

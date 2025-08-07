@@ -74,6 +74,24 @@ export default function Header() {
                 >
                   كشف حساب العملاء
                 </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => {
+                    setSelectedInvoiceType("revenue");
+                    setIsInvoiceModalOpen(true);
+                  }}
+                  data-testid="menu-revenue"
+                >
+                  الإيرادات
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => {
+                    setSelectedInvoiceType("expense");
+                    setIsInvoiceModalOpen(true);
+                  }}
+                  data-testid="menu-expense"
+                >
+                  المصروفات
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             
@@ -83,7 +101,9 @@ export default function Header() {
                   <DialogTitle>
                     إنشاء {selectedInvoiceType === "monthly" ? "رسوم شهرية" : 
                            selectedInvoiceType === "commercial" ? "فاتورة عداد تجاري" : 
-                           "كشف حساب العملاء"}
+                           selectedInvoiceType === "statement" ? "كشف حساب العملاء" :
+                           selectedInvoiceType === "revenue" ? "إيراد جديد" :
+                           "مصروف جديد"}
                   </DialogTitle>
                 </DialogHeader>
                 <InvoiceForm 

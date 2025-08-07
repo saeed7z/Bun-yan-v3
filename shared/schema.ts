@@ -34,7 +34,6 @@ export const invoiceItems = pgTable("invoice_items", {
   invoiceId: varchar("invoice_id").notNull().references(() => invoices.id),
   description: text("description").notNull(),
   documentNumber: text("document_number"), // Optional document number field
-  quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
 });

@@ -71,7 +71,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-sm text-gray-600 mb-1">إجمالي الايرادات</p>
                 <p className="text-2xl font-bold text-gray-900" data-testid="stat-total-sales">
-                  ₪{parseFloat(stats?.totalSales || "0").toLocaleString()}
+                  ﷼{parseFloat(stats?.totalSales || "0").toLocaleString()}
                 </p>
                 <p className="text-sm text-success">+12.5% عن الشهر السابق</p>
               </div>
@@ -173,7 +173,7 @@ export default function Dashboard() {
                             {invoice.number}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ₪{parseFloat(invoice.total).toLocaleString()}
+                            ﷼{parseFloat(invoice.total).toLocaleString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             {getStatusBadge(invoice.status)}
@@ -222,7 +222,7 @@ export default function Dashboard() {
                         </div>
                         <div className="text-left">
                           <p className="text-sm font-medium text-gray-900">
-                            ₪{parseFloat(customer.totalAmount).toLocaleString()}
+                            ﷼{parseFloat(customer.totalAmount).toLocaleString()}
                           </p>
                           <p className="text-xs text-success">+5.2%</p>
                         </div>

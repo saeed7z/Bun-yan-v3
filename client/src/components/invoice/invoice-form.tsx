@@ -21,7 +21,6 @@ const invoiceFormSchema = z.object({
   items: z.array(z.object({
     description: z.string().min(1, "يجب إدخال وصف الخدمة"),
     documentNumber: z.string().optional(),
-    quantity: z.string().min(1, "يجب إدخال الكمية").refine(val => parseFloat(val) > 0, "الكمية يجب أن تكون أكبر من صفر"),
     price: z.string().min(1, "يجب إدخال السعر").refine(val => parseFloat(val) > 0, "السعر يجب أن يكون أكبر من صفر"),
   })).min(1, "يجب إضافة عنصر واحد على الأقل"),
   discount: z.string().optional(),
@@ -55,9 +54,8 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
       items: invoice?.items ? invoice.items.map((item: any) => ({
         description: item.description,
         documentNumber: item.documentNumber || "",
-        quantity: item.quantity,
         price: item.price,
-      })) : [{ description: "", documentNumber: "", quantity: "", price: "" }],
+      })) : [{ description: "", documentNumber: "", price: "" }],
     },
   });
 
@@ -121,9 +119,8 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
     let newSubtotal = 0;
     
     watchedItems?.forEach((item) => {
-      const quantity = parseFloat(item.quantity) || 0;
       const price = parseFloat(item.price) || 0;
-      newSubtotal += quantity * price;
+      newSubtotal += price;
     });
 
     const discount = parseFloat(watchedDiscount) || 0;
@@ -155,9 +152,8 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
     const items = data.items.map(item => ({
       description: item.description,
       documentNumber: item.documentNumber || null,
-      quantity: item.quantity,
       price: item.price,
-      total: (parseFloat(item.quantity) * parseFloat(item.price)).toFixed(2),
+      total: parseFloat(item.price).toFixed(2),
     }));
 
     if (invoice) {
@@ -175,9 +171,9 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
       customer: { name: customerName },
       items: form.watch("items").map((item: any, index: number) => ({
         description: item.description || `عنصر ${index + 1}`,
-        quantity: item.quantity || "0",
+        documentNumber: item.documentNumber || "",
         price: item.price || "0",
-        total: ((parseFloat(item.quantity) || 0) * (parseFloat(item.price) || 0)).toFixed(2)
+        total: (parseFloat(item.price) || 0).toFixed(2)
       })),
       subtotal: subtotal.toFixed(2),
       tax: tax.toFixed(2),
@@ -235,28 +231,26 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
         <thead>
             <tr>
                 <th>الوصف</th>
-                <th>الكمية</th>
-                <th>السعر</th>
-                <th>المجموع</th>
+                <th>رقم السند</th>
+                <th>المبلغ</th>
             </tr>
         </thead>
         <tbody>
             ${(invoiceData.items || []).map((item: any) => `
                 <tr>
                     <td>${item.description}</td>
-                    <td>${item.quantity}</td>
-                    <td>₪${parseFloat(item.price).toFixed(2)}</td>
-                    <td>₪${parseFloat(item.total).toFixed(2)}</td>
+                    <td>${item.documentNumber || ''}</td>
+                    <td>﷼${parseFloat(item.price).toFixed(2)}</td>
                 </tr>
             `).join('')}
         </tbody>
     </table>
 
     <div class="totals">
-        <div class="total-row"><strong>المجموع الجزئي: ₪${parseFloat(invoiceData.subtotal).toFixed(2)}</strong></div>
-        <div class="total-row"><strong>الضريبة: ₪${parseFloat(invoiceData.tax).toFixed(2)}</strong></div>
-        <div class="total-row"><strong>الخصم: ₪${parseFloat(invoiceData.discount).toFixed(2)}</strong></div>
-        <div class="total-row" style="font-size: 18px;"><strong>المجموع الإجمالي: ₪${parseFloat(invoiceData.total).toFixed(2)}</strong></div>
+        <div class="total-row"><strong>المجموع الجزئي: ﷼${parseFloat(invoiceData.subtotal).toFixed(2)}</strong></div>
+        <div class="total-row"><strong>الضريبة: ﷼${parseFloat(invoiceData.tax).toFixed(2)}</strong></div>
+        <div class="total-row"><strong>الخصم: ﷼${parseFloat(invoiceData.discount).toFixed(2)}</strong></div>
+        <div class="total-row" style="font-size: 18px;"><strong>المجموع الإجمالي: ﷼${parseFloat(invoiceData.total).toFixed(2)}</strong></div>
     </div>
 
     ${invoiceData.notes ? `<div style="margin-top: 30px;"><strong>ملاحظات:</strong><br>${invoiceData.notes}</div>` : ''}
@@ -320,7 +314,7 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => append({ description: "", documentNumber: "", quantity: "", price: "" })}
+            onClick={() => append({ description: "", documentNumber: "", price: "" })}
             data-testid="button-add-item"
           >
             <Plus className="ml-1" size={16} />
@@ -332,7 +326,7 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
           {fields.map((field, index) => (
             <Card key={field.id} className="p-4 bg-gray-50">
               <div className="grid grid-cols-12 gap-3 items-center">
-                <div className="col-span-4">
+                <div className="col-span-5">
                   <Input
                     {...form.register(`items.${index}.description`)}
                     placeholder="وصف الخدمة/المنتج"
@@ -340,7 +334,7 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
                     data-testid={`input-item-description-${index}`}
                   />
                 </div>
-                <div className="col-span-2">
+                <div className="col-span-3">
                   <Input
                     {...form.register(`items.${index}.documentNumber`)}
                     placeholder="رقم السند (اختياري)"
@@ -348,32 +342,14 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
                     data-testid={`input-item-document-number-${index}`}
                   />
                 </div>
-                <div className="col-span-2">
-                  <Input
-                    {...form.register(`items.${index}.quantity`)}
-                    type="number"
-                    step="0.01"
-                    placeholder="الكمية"
-                    className="text-sm"
-                    data-testid={`input-item-quantity-${index}`}
-                  />
-                </div>
-                <div className="col-span-2">
+                <div className="col-span-3">
                   <Input
                     {...form.register(`items.${index}.price`)}
                     type="number"
                     step="0.01"
-                    placeholder="السعر"
+                    placeholder="المبلغ (﷼)"
                     className="text-sm"
                     data-testid={`input-item-price-${index}`}
-                  />
-                </div>
-                <div className="col-span-1">
-                  <Input
-                    value={`₪${((parseFloat(watchedItems[index]?.quantity) || 0) * (parseFloat(watchedItems[index]?.price) || 0)).toFixed(2)}`}
-                    readOnly
-                    className="bg-gray-100 text-sm"
-                    data-testid={`text-item-total-${index}`}
                   />
                 </div>
                 <div className="col-span-1">
@@ -395,7 +371,6 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
                 <div className="mt-2 text-sm text-destructive">
                   {form.formState.errors.items[index]?.description?.message ||
                    form.formState.errors.items[index]?.documentNumber?.message ||
-                   form.formState.errors.items[index]?.quantity?.message ||
                    form.formState.errors.items[index]?.price?.message}
                 </div>
               )}
@@ -429,7 +404,7 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
             <CardContent className="p-4 space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">المجموع الجزئي:</span>
-                <span className="font-medium" data-testid="text-subtotal">₪{subtotal.toFixed(2)}</span>
+                <span className="font-medium" data-testid="text-subtotal">﷼{subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm items-center">
                 <span className="text-gray-600">الخصم (%):</span>
@@ -446,12 +421,12 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">الضريبة (17%):</span>
-                <span className="font-medium" data-testid="text-tax">₪{tax.toFixed(2)}</span>
+                <span className="font-medium" data-testid="text-tax">﷼{tax.toFixed(2)}</span>
               </div>
               <div className="border-t border-gray-200 pt-3">
                 <div className="flex justify-between text-lg font-semibold">
                   <span>المجموع الإجمالي:</span>
-                  <span className="text-primary" data-testid="text-total">₪{total.toFixed(2)}</span>
+                  <span className="text-primary" data-testid="text-total">﷼{total.toFixed(2)}</span>
                 </div>
               </div>
             </CardContent>

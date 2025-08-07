@@ -234,7 +234,7 @@ export default function Invoices() {
                       {getCustomerName(invoice.customerId)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      ₪{parseFloat(invoice.total).toLocaleString()}
+                      ﷼{parseFloat(invoice.total).toLocaleString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(invoice.status)}

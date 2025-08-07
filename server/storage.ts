@@ -84,8 +84,7 @@ export class MemStorage implements IStorage {
     }, [
       {
         description: "استشارات تطوير الأعمال",
-        quantity: "20",
-        price: "138.89",
+        price: "2777.78",
         total: "2777.78"
       }
     ]);
@@ -105,8 +104,7 @@ export class MemStorage implements IStorage {
     }, [
       {
         description: "خدمات تسويق رقمي",
-        quantity: "15",
-        price: "106.84",
+        price: "1602.56",
         total: "1602.56"
       }
     ]);
@@ -126,8 +124,7 @@ export class MemStorage implements IStorage {
     }, [
       {
         description: "تطوير نظام إدارة",
-        quantity: "25",
-        price: "185.30",
+        price: "4632.48",
         total: "4632.48"
       }
     ]);

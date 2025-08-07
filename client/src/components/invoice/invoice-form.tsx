@@ -142,6 +142,7 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
       date: new Date(data.date),
       dueDate: null,
       status: invoice?.status || "pending",
+      type: invoiceType || "monthly",
       subtotal: subtotal.toFixed(2),
       tax: tax.toFixed(2),
       discount: ((subtotal * (parseFloat(data.discount || "0") / 100))).toFixed(2),

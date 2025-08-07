@@ -159,6 +159,24 @@ export default function Customers() {
                       <span>{customer.address}</span>
                     </div>
                   )}
+                  <div className="pt-3 border-t border-gray-100">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">رصيد الحساب:</span>
+                      <span 
+                        className={`font-medium ${
+                          parseFloat(customer.balance) > 0 
+                            ? 'text-red-600' 
+                            : 'text-green-600'
+                        }`}
+                        data-testid={`customer-balance-${customer.id}`}
+                      >
+                        {parseFloat(customer.balance) > 0 
+                          ? `₪${parseFloat(customer.balance).toFixed(2)} مديون`
+                          : 'لا يوجد دين'
+                        }
+                      </span>
+                    </div>
+                  </div>
                   <div className="pt-2 text-xs text-gray-500">
                     تاريخ الإضافة: {new Date(customer.createdAt).toLocaleDateString('ar-SA')}
                   </div>

@@ -9,6 +9,7 @@ export const customers = pgTable("customers", {
   email: text("email"),
   phone: text("phone"),
   address: text("address"),
+  balance: decimal("balance", { precision: 10, scale: 2 }).notNull().default("0"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -19,6 +20,7 @@ export const invoices = pgTable("invoices", {
   date: timestamp("date").notNull(),
   dueDate: timestamp("due_date"),
   status: text("status").notNull().default("pending"), // pending, paid, overdue
+  type: text("type").notNull().default("monthly"), // monthly, commercial, statement, revenue, expense
   subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
   tax: decimal("tax", { precision: 10, scale: 2 }).notNull().default("0"),
   discount: decimal("discount", { precision: 10, scale: 2 }).notNull().default("0"),
@@ -66,4 +68,5 @@ export type InvoiceWithCustomer = Invoice & {
 export type CustomerWithStats = Customer & {
   totalInvoices: number;
   totalAmount: string;
+  accountBalance: string;
 };

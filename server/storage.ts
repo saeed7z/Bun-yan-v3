@@ -75,6 +75,7 @@ export class MemStorage implements IStorage {
       date: new Date("2024-01-15"),
       dueDate: new Date("2024-02-15"),
       status: "paid",
+      type: "monthly",
       subtotal: "2777.78",
       tax: "472.22",
       discount: "0",
@@ -96,6 +97,7 @@ export class MemStorage implements IStorage {
       date: new Date("2024-01-14"),
       dueDate: new Date("2024-02-14"),
       status: "pending",
+      type: "commercial",
       subtotal: "1602.56",
       tax: "272.44",
       discount: "0",
@@ -117,6 +119,7 @@ export class MemStorage implements IStorage {
       date: new Date("2024-01-10"),
       dueDate: new Date("2024-01-25"),
       status: "overdue",
+      type: "monthly",
       subtotal: "4632.48",
       tax: "787.52",
       discount: "0",
@@ -145,8 +148,12 @@ export class MemStorage implements IStorage {
   async createCustomer(insertCustomer: InsertCustomer): Promise<Customer> {
     const id = randomUUID();
     const customer: Customer = {
-      ...insertCustomer,
+      name: insertCustomer.name,
+      email: insertCustomer.email || null,
+      phone: insertCustomer.phone || null,
+      address: insertCustomer.address || null,
       id,
+      balance: "0",
       createdAt: new Date(),
     };
     this.customers.set(id, customer);
@@ -177,7 +184,8 @@ export class MemStorage implements IStorage {
       result.push({
         ...customer,
         totalInvoices: invoices.length,
-        totalAmount: totalAmount.toFixed(2)
+        totalAmount: totalAmount.toFixed(2),
+        accountBalance: customer.balance
       });
     }
 
@@ -214,7 +222,17 @@ export class MemStorage implements IStorage {
   async createInvoice(insertInvoice: InsertInvoice, items: InsertInvoiceItem[]): Promise<InvoiceWithCustomer> {
     const id = randomUUID();
     const invoice: Invoice = {
-      ...insertInvoice,
+      number: insertInvoice.number,
+      customerId: insertInvoice.customerId,
+      date: insertInvoice.date,
+      dueDate: insertInvoice.dueDate || null,
+      status: insertInvoice.status || "pending",
+      type: insertInvoice.type || "monthly",
+      subtotal: insertInvoice.subtotal,
+      tax: insertInvoice.tax || "0",
+      discount: insertInvoice.discount || "0",
+      total: insertInvoice.total,
+      notes: insertInvoice.notes || null,
       id,
       createdAt: new Date(),
     };
@@ -231,6 +249,35 @@ export class MemStorage implements IStorage {
       };
       this.invoiceItems.set(itemId, invoiceItem);
       createdItems.push(invoiceItem);
+    }
+
+    // Update customer balance based on invoice type
+    if (invoice.type === "monthly" || invoice.type === "commercial") {
+      const customer = this.customers.get(invoice.customerId);
+      if (customer) {
+        const currentBalance = parseFloat(customer.balance);
+        const invoiceAmount = parseFloat(invoice.total);
+        const newBalance = currentBalance + invoiceAmount;
+        
+        const updatedCustomer: Customer = { 
+          ...customer, 
+          balance: newBalance.toFixed(2) 
+        };
+        this.customers.set(invoice.customerId, updatedCustomer);
+      }
+    } else if (invoice.type === "revenue") {
+      const customer = this.customers.get(invoice.customerId);
+      if (customer) {
+        const currentBalance = parseFloat(customer.balance);
+        const revenueAmount = parseFloat(invoice.total);
+        const newBalance = Math.max(0, currentBalance - revenueAmount); // Don't go below zero
+        
+        const updatedCustomer: Customer = { 
+          ...customer, 
+          balance: newBalance.toFixed(2) 
+        };
+        this.customers.set(invoice.customerId, updatedCustomer);
+      }
     }
 
     const customer = this.customers.get(invoice.customerId)!;

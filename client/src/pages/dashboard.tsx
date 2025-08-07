@@ -69,7 +69,7 @@ export default function Dashboard() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">إجمالي المبيعات</p>
+                <p className="text-sm text-gray-600 mb-1">إجمالي الايرادات</p>
                 <p className="text-2xl font-bold text-gray-900" data-testid="stat-total-sales">
                   ₪{parseFloat(stats?.totalSales || "0").toLocaleString()}
                 </p>
@@ -133,7 +133,6 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
-
       {/* Recent Invoices and Top Customers */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Invoices */}

@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Printer } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { insertInvoiceSchema, insertInvoiceItemSchema } from "@shared/schema";
@@ -162,6 +162,103 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
     } else {
       createInvoiceMutation.mutate({ invoice: invoiceData, items });
     }
+  };
+
+  const handlePrintPreview = () => {
+    const customerName = customers && Array.isArray(customers) ? customers.find((c: any) => c.id === form.watch("customerId"))?.name || "غير محدد" : "غير محدد";
+    const invoiceData = {
+      number: invoice?.number || generateInvoiceNumber(),
+      date: form.watch("date"),
+      customer: { name: customerName },
+      items: form.watch("items").map((item: any, index: number) => ({
+        description: item.description || `عنصر ${index + 1}`,
+        quantity: item.quantity || "0",
+        price: item.price || "0",
+        total: ((parseFloat(item.quantity) || 0) * (parseFloat(item.price) || 0)).toFixed(2)
+      })),
+      subtotal: subtotal.toFixed(2),
+      tax: tax.toFixed(2),
+      discount: ((subtotal * (parseFloat(form.watch("discount") || "0") / 100))).toFixed(2),
+      total: total.toFixed(2),
+      notes: form.watch("notes") || ""
+    };
+
+    const htmlContent = generatePreviewHTML(invoiceData);
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
+    }
+  };
+
+  const generatePreviewHTML = (invoiceData: any) => {
+    return `
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>معاينة الفاتورة ${invoiceData.number}</title>
+    <style>
+        @page { size: A5; margin: 15mm; }
+        body { font-family: Arial, sans-serif; direction: rtl; margin: 0; font-size: 12px; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .invoice-details { margin: 15px 0; }
+        .items-table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        .items-table th, .items-table td { border: 1px solid #ddd; padding: 6px; text-align: center; font-size: 11px; }
+        .items-table th { background-color: #f5f5f5; }
+        .totals { margin-top: 15px; text-align: left; }
+        .total-row { margin: 3px 0; }
+        .print-button { position: fixed; top: 10px; left: 10px; z-index: 1000; }
+        @media print { .print-button { display: none; } }
+    </style>
+</head>
+<body>
+    <button class="print-button" onclick="window.print()" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">طباعة سريعة</button>
+    <div class="header">
+        <h1>فاتورة</h1>
+        <h2>${invoiceData.number}</h2>
+    </div>
+    
+    <div class="invoice-details">
+        <p><strong>العميل:</strong> ${invoiceData.customer.name}</p>
+        <p><strong>التاريخ:</strong> ${new Date(invoiceData.date).toLocaleDateString('ar-SA')}</p>
+    </div>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th>الوصف</th>
+                <th>الكمية</th>
+                <th>السعر</th>
+                <th>المجموع</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${(invoiceData.items || []).map((item: any) => `
+                <tr>
+                    <td>${item.description}</td>
+                    <td>${item.quantity}</td>
+                    <td>₪${parseFloat(item.price).toFixed(2)}</td>
+                    <td>₪${parseFloat(item.total).toFixed(2)}</td>
+                </tr>
+            `).join('')}
+        </tbody>
+    </table>
+
+    <div class="totals">
+        <div class="total-row"><strong>المجموع الجزئي: ₪${parseFloat(invoiceData.subtotal).toFixed(2)}</strong></div>
+        <div class="total-row"><strong>الضريبة: ₪${parseFloat(invoiceData.tax).toFixed(2)}</strong></div>
+        <div class="total-row"><strong>الخصم: ₪${parseFloat(invoiceData.discount).toFixed(2)}</strong></div>
+        <div class="total-row" style="font-size: 18px;"><strong>المجموع الإجمالي: ₪${parseFloat(invoiceData.total).toFixed(2)}</strong></div>
+    </div>
+
+    ${invoiceData.notes ? `<div style="margin-top: 30px;"><strong>ملاحظات:</strong><br>${invoiceData.notes}</div>` : ''}
+</body>
+</html>`;
   };
 
   const isLoading = createInvoiceMutation.isPending || updateInvoiceMutation.isPending;
@@ -356,9 +453,20 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
           <Button type="button" variant="outline" onClick={onSuccess} data-testid="button-cancel-invoice">
             إلغاء
           </Button>
-          <Button type="submit" disabled={isLoading} data-testid="button-save-invoice">
-            {isLoading ? "جاري الحفظ..." : invoice ? "تحديث الفاتورة" : "إنشاء الفاتورة"}
-          </Button>
+          <div className="flex space-x-reverse space-x-3">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={handlePrintPreview}
+              data-testid="button-print-preview"
+            >
+              <Printer className="ml-2" size={16} />
+              معاينة وطباعة
+            </Button>
+            <Button type="submit" disabled={isLoading} data-testid="button-save-invoice">
+              {isLoading ? "جاري الحفظ..." : invoice ? "تحديث الفاتورة" : "إنشاء الفاتورة"}
+            </Button>
+          </div>
         </div>
       </div>
     </form>

@@ -1,0 +1,376 @@
+import { useState, useEffect } from "react";
+import { useForm, useFieldArray } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
+import { Plus, Trash2 } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { insertInvoiceSchema, insertInvoiceItemSchema } from "@shared/schema";
+
+const invoiceFormSchema = z.object({
+  customerId: z.string().min(1, "يجب اختيار العميل"),
+  date: z.string().min(1, "يجب تحديد التاريخ"),
+  dueDate: z.string().optional(),
+  notes: z.string().optional(),
+  items: z.array(z.object({
+    description: z.string().min(1, "يجب إدخال وصف الخدمة"),
+    quantity: z.string().min(1, "يجب إدخال الكمية").refine(val => parseFloat(val) > 0, "الكمية يجب أن تكون أكبر من صفر"),
+    price: z.string().min(1, "يجب إدخال السعر").refine(val => parseFloat(val) > 0, "السعر يجب أن يكون أكبر من صفر"),
+  })).min(1, "يجب إضافة عنصر واحد على الأقل"),
+  discount: z.string().optional(),
+});
+
+type FormData = z.infer<typeof invoiceFormSchema>;
+
+interface InvoiceFormProps {
+  invoice?: any;
+  onSuccess: () => void;
+}
+
+export default function InvoiceForm({ invoice, onSuccess }: InvoiceFormProps) {
+  const { toast } = useToast();
+  const [subtotal, setSubtotal] = useState(0);
+  const [tax, setTax] = useState(0);
+  const [total, setTotal] = useState(0);
+
+  const { data: customers } = useQuery({
+    queryKey: ["/api/customers"],
+  });
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(invoiceFormSchema),
+    defaultValues: {
+      customerId: invoice?.customerId || "",
+      date: invoice?.date ? new Date(invoice.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      dueDate: invoice?.dueDate ? new Date(invoice.dueDate).toISOString().split('T')[0] : "",
+      notes: invoice?.notes || "",
+      discount: invoice?.discount || "0",
+      items: invoice?.items?.map((item: any) => ({
+        description: item.description,
+        quantity: item.quantity,
+        price: item.price,
+      })) || [{ description: "", quantity: "", price: "" }],
+    },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "items",
+  });
+
+  const watchedItems = form.watch("items");
+  const watchedDiscount = form.watch("discount");
+
+  // Generate unique invoice number
+  const generateInvoiceNumber = () => {
+    const year = new Date().getFullYear();
+    const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `INV-${year}-${randomNum}`;
+  };
+
+  const createInvoiceMutation = useMutation({
+    mutationFn: (data: any) => apiRequest("POST", "/api/invoices", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      toast({
+        title: "تم الحفظ بنجاح",
+        description: "تم إنشاء الفاتورة بنجاح",
+      });
+      onSuccess();
+    },
+    onError: () => {
+      toast({
+        title: "حدث خطأ",
+        description: "فشل في إنشاء الفاتورة",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateInvoiceMutation = useMutation({
+    mutationFn: (data: any) => apiRequest("PUT", `/api/invoices/${invoice.id}`, data.invoice),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      toast({
+        title: "تم التحديث بنجاح",
+        description: "تم تحديث الفاتورة بنجاح",
+      });
+      onSuccess();
+    },
+    onError: () => {
+      toast({
+        title: "حدث خطأ",
+        description: "فشل في تحديث الفاتورة",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Calculate totals
+  useEffect(() => {
+    let newSubtotal = 0;
+    
+    watchedItems?.forEach((item) => {
+      const quantity = parseFloat(item.quantity) || 0;
+      const price = parseFloat(item.price) || 0;
+      newSubtotal += quantity * price;
+    });
+
+    const discount = parseFloat(watchedDiscount) || 0;
+    const discountAmount = (newSubtotal * discount) / 100;
+    const subtotalAfterDiscount = newSubtotal - discountAmount;
+    const newTax = subtotalAfterDiscount * 0.17; // 17% tax
+    const newTotal = subtotalAfterDiscount + newTax;
+
+    setSubtotal(newSubtotal);
+    setTax(newTax);
+    setTotal(newTotal);
+  }, [watchedItems, watchedDiscount]);
+
+  const onSubmit = (data: FormData) => {
+    const invoiceData = {
+      number: invoice?.number || generateInvoiceNumber(),
+      customerId: data.customerId,
+      date: new Date(data.date),
+      dueDate: data.dueDate ? new Date(data.dueDate) : null,
+      status: invoice?.status || "pending",
+      subtotal: subtotal.toFixed(2),
+      tax: tax.toFixed(2),
+      discount: ((subtotal * (parseFloat(data.discount || "0") / 100))).toFixed(2),
+      total: total.toFixed(2),
+      notes: data.notes || "",
+    };
+
+    const items = data.items.map(item => ({
+      description: item.description,
+      quantity: item.quantity,
+      price: item.price,
+      total: (parseFloat(item.quantity) * parseFloat(item.price)).toFixed(2),
+    }));
+
+    if (invoice) {
+      updateInvoiceMutation.mutate({ invoice: invoiceData, items });
+    } else {
+      createInvoiceMutation.mutate({ invoice: invoiceData, items });
+    }
+  };
+
+  const isLoading = createInvoiceMutation.isPending || updateInvoiceMutation.isPending;
+
+  return (
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      {/* Customer Selection */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <Label>العميل *</Label>
+          <Select 
+            value={form.watch("customerId")} 
+            onValueChange={(value) => form.setValue("customerId", value)}
+          >
+            <SelectTrigger className="mt-1" data-testid="select-customer">
+              <SelectValue placeholder="اختر العميل" />
+            </SelectTrigger>
+            <SelectContent>
+              {customers?.map((customer: any) => (
+                <SelectItem key={customer.id} value={customer.id}>
+                  {customer.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {form.formState.errors.customerId && (
+            <p className="text-sm text-destructive mt-1" data-testid="error-customer">
+              {form.formState.errors.customerId.message}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <Label htmlFor="date">تاريخ الفاتورة *</Label>
+          <Input
+            id="date"
+            type="date"
+            {...form.register("date")}
+            className="mt-1"
+            data-testid="input-invoice-date"
+          />
+          {form.formState.errors.date && (
+            <p className="text-sm text-destructive mt-1" data-testid="error-date">
+              {form.formState.errors.date.message}
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div>
+        <Label htmlFor="dueDate">تاريخ الاستحقاق</Label>
+        <Input
+          id="dueDate"
+          type="date"
+          {...form.register("dueDate")}
+          className="mt-1"
+          data-testid="input-due-date"
+        />
+      </div>
+
+      {/* Invoice Items */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <Label>عناصر الفاتورة *</Label>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => append({ description: "", quantity: "", price: "" })}
+            data-testid="button-add-item"
+          >
+            <Plus className="ml-1" size={16} />
+            إضافة عنصر
+          </Button>
+        </div>
+
+        <div className="space-y-3">
+          {fields.map((field, index) => (
+            <Card key={field.id} className="p-4 bg-gray-50">
+              <div className="grid grid-cols-12 gap-3 items-center">
+                <div className="col-span-5">
+                  <Input
+                    {...form.register(`items.${index}.description`)}
+                    placeholder="وصف الخدمة/المنتج"
+                    className="text-sm"
+                    data-testid={`input-item-description-${index}`}
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Input
+                    {...form.register(`items.${index}.quantity`)}
+                    type="number"
+                    step="0.01"
+                    placeholder="الكمية"
+                    className="text-sm"
+                    data-testid={`input-item-quantity-${index}`}
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Input
+                    {...form.register(`items.${index}.price`)}
+                    type="number"
+                    step="0.01"
+                    placeholder="السعر"
+                    className="text-sm"
+                    data-testid={`input-item-price-${index}`}
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Input
+                    value={`₪${((parseFloat(watchedItems[index]?.quantity) || 0) * (parseFloat(watchedItems[index]?.price) || 0)).toFixed(2)}`}
+                    readOnly
+                    className="bg-gray-100 text-sm"
+                    data-testid={`text-item-total-${index}`}
+                  />
+                </div>
+                <div className="col-span-1">
+                  {fields.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => remove(index)}
+                      className="text-destructive hover:text-destructive"
+                      data-testid={`button-remove-item-${index}`}
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  )}
+                </div>
+              </div>
+              {form.formState.errors.items?.[index] && (
+                <div className="mt-2 text-sm text-destructive">
+                  {form.formState.errors.items[index]?.description?.message ||
+                   form.formState.errors.items[index]?.quantity?.message ||
+                   form.formState.errors.items[index]?.price?.message}
+                </div>
+              )}
+            </Card>
+          ))}
+        </div>
+
+        {form.formState.errors.items && (
+          <p className="text-sm text-destructive mt-2" data-testid="error-items">
+            {form.formState.errors.items.message}
+          </p>
+        )}
+      </div>
+
+      {/* Invoice Totals */}
+      <div className="border-t border-gray-200 pt-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <Label htmlFor="notes">ملاحظات</Label>
+            <Textarea
+              id="notes"
+              {...form.register("notes")}
+              rows={4}
+              placeholder="ملاحظات إضافية..."
+              className="mt-1"
+              data-testid="input-notes"
+            />
+          </div>
+          
+          <Card className="bg-gray-50">
+            <CardContent className="p-4 space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">المجموع الجزئي:</span>
+                <span className="font-medium" data-testid="text-subtotal">₪{subtotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-sm items-center">
+                <span className="text-gray-600">الخصم (%):</span>
+                <Input
+                  {...form.register("discount")}
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  className="w-20 h-8 text-xs text-center"
+                  placeholder="0"
+                  data-testid="input-discount"
+                />
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">الضريبة (17%):</span>
+                <span className="font-medium" data-testid="text-tax">₪{tax.toFixed(2)}</span>
+              </div>
+              <div className="border-t border-gray-200 pt-3">
+                <div className="flex justify-between text-lg font-semibold">
+                  <span>المجموع الإجمالي:</span>
+                  <span className="text-primary" data-testid="text-total">₪{total.toFixed(2)}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Form Actions */}
+      <div className="border-t border-gray-200 pt-6">
+        <div className="flex justify-between">
+          <Button type="button" variant="outline" onClick={onSuccess} data-testid="button-cancel-invoice">
+            إلغاء
+          </Button>
+          <Button type="submit" disabled={isLoading} data-testid="button-save-invoice">
+            {isLoading ? "جاري الحفظ..." : invoice ? "تحديث الفاتورة" : "إنشاء الفاتورة"}
+          </Button>
+        </div>
+      </div>
+    </form>
+  );
+}

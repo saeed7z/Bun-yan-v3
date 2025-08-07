@@ -86,6 +86,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/customers/:id/account", async (req, res) => {
+    try {
+      const accountDetails = await storage.getCustomerAccountDetails(req.params.id);
+      if (!accountDetails) {
+        return res.status(404).json({ message: "Customer not found" });
+      }
+      res.json(accountDetails);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch customer account details" });
+    }
+  });
+
   // Invoice routes
   app.get("/api/invoices", async (_req, res) => {
     try {

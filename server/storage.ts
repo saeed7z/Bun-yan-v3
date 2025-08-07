@@ -33,6 +33,26 @@ export interface IStorage {
     overdueInvoices: number;
     activeCustomers: number;
   }>;
+
+  // Customer account details
+  getCustomerAccountDetails(customerId: string): Promise<{
+    customer: Customer;
+    transactions: Array<{
+      id: string;
+      type: 'debit' | 'credit';
+      entryNumber: number;
+      amount: string;
+      description: string;
+      documentNumber: string;
+      date: string;
+      invoiceNumber: string;
+    }>;
+    totals: {
+      totalDebit: string;
+      totalCredit: string;
+      currentBalance: string;
+    };
+  } | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -274,6 +294,11 @@ export class MemStorage implements IStorage {
         id: itemId,
         invoiceId: id,
         documentNumber: item.documentNumber || null,
+        meterNumber: item.meterNumber || null,
+        previousReading: item.previousReading || null,
+        currentReading: item.currentReading || null,
+        unitPrice: item.unitPrice || null,
+        price: item.price || "0",
       };
       this.invoiceItems.set(itemId, invoiceItem);
       createdItems.push(invoiceItem);
@@ -347,7 +372,12 @@ export class MemStorage implements IStorage {
     const invoiceItem: InvoiceItem = { 
       ...item, 
       id,
-      documentNumber: item.documentNumber || null 
+      documentNumber: item.documentNumber || null,
+      meterNumber: item.meterNumber || null,
+      previousReading: item.previousReading || null,
+      currentReading: item.currentReading || null,
+      unitPrice: item.unitPrice || null,
+      price: item.price || "0",
     };
     this.invoiceItems.set(id, invoiceItem);
     return invoiceItem;
@@ -391,6 +421,99 @@ export class MemStorage implements IStorage {
       pendingInvoices,
       overdueInvoices,
       activeCustomers
+    };
+  }
+
+  async getCustomerAccountDetails(customerId: string): Promise<{
+    customer: Customer;
+    transactions: Array<{
+      id: string;
+      type: 'debit' | 'credit';
+      entryNumber: number;
+      amount: string;
+      description: string;
+      documentNumber: string;
+      date: string;
+      invoiceNumber: string;
+    }>;
+    totals: {
+      totalDebit: string;
+      totalCredit: string;
+      currentBalance: string;
+    };
+  } | undefined> {
+    const customer = this.customers.get(customerId);
+    if (!customer) return undefined;
+
+    // Get all invoices for this customer
+    const invoices = Array.from(this.invoices.values()).filter(inv => inv.customerId === customerId);
+    
+    const transactions: Array<{
+      id: string;
+      type: 'debit' | 'credit';
+      entryNumber: number;
+      amount: string;
+      description: string;
+      documentNumber: string;
+      date: string;
+      invoiceNumber: string;
+    }> = [];
+
+    let entryNumber = 1;
+    let totalDebit = 0;
+    let totalCredit = 0;
+
+    // Process invoices in chronological order
+    const sortedInvoices = invoices.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    for (const invoice of sortedInvoices) {
+      const items = Array.from(this.invoiceItems.values()).filter(item => item.invoiceId === invoice.id);
+      
+      // For debit transactions (monthly and commercial invoices)
+      if (invoice.type === 'monthly' || invoice.type === 'commercial') {
+        for (const item of items) {
+          transactions.push({
+            id: `debit-${invoice.id}-${item.id}`,
+            type: 'debit',
+            entryNumber: entryNumber++,
+            amount: item.total,
+            description: item.description,
+            documentNumber: item.documentNumber || invoice.number,
+            date: invoice.date.toISOString(),
+            invoiceNumber: invoice.number
+          });
+          totalDebit += parseFloat(item.total);
+        }
+      }
+      
+      // For credit transactions (payments/revenues)
+      else if (invoice.type === 'revenue' && invoice.status === 'paid') {
+        for (const item of items) {
+          transactions.push({
+            id: `credit-${invoice.id}-${item.id}`,
+            type: 'credit',
+            entryNumber: entryNumber++,
+            amount: item.total,
+            description: `دفعة: ${item.description}`,
+            documentNumber: item.documentNumber || invoice.number,
+            date: invoice.date.toISOString(),
+            invoiceNumber: invoice.number
+          });
+          totalCredit += parseFloat(item.total);
+        }
+      }
+    }
+
+    const currentBalance = totalDebit - totalCredit;
+
+    return {
+      customer,
+      transactions: transactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
+      totals: {
+        totalDebit: totalDebit.toFixed(2),
+        totalCredit: totalCredit.toFixed(2),
+        currentBalance: currentBalance.toFixed(2)
+      }
     };
   }
 }

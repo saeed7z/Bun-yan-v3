@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Edit, Trash2, Mail, Phone, MapPin, Printer } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Mail, Phone, MapPin, Printer, Eye } from "lucide-react";
 import CustomerForm from "@/components/customer/customer-form";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Customers() {
@@ -119,6 +120,16 @@ export default function Customers() {
                     {customer.name}
                   </CardTitle>
                   <div className="flex space-x-reverse space-x-2">
+                    <Link href={`/customers/${customer.id}`}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        data-testid={`button-view-account-${customer.id}`}
+                        title="كشف حساب العميل"
+                      >
+                        <Eye size={16} />
+                      </Button>
+                    </Link>
                     <Button
                       variant="ghost"
                       size="sm"

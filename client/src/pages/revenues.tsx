@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Edit, Trash2, TrendingUp } from "lucide-react";
+import { Plus, Search, Edit, Trash2, TrendingUp, Printer } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -41,10 +41,21 @@ export default function Revenues() {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
         </div>
         
-        <Button className="bg-success text-white hover:bg-green-700" data-testid="button-add-revenue">
-          <Plus className="ml-2" size={16} />
-          إضافة إيراد جديد
-        </Button>
+        <div className="flex space-x-reverse space-x-3">
+          <Button 
+            variant="outline" 
+            onClick={() => window.print()}
+            data-testid="button-print-revenues"
+          >
+            <Printer className="ml-2" size={16} />
+            طباعة القائمة
+          </Button>
+          
+          <Button className="bg-success text-white hover:bg-green-700" data-testid="button-add-revenue">
+            <Plus className="ml-2" size={16} />
+            إضافة إيراد جديد
+          </Button>
+        </div>
       </div>
 
       {/* Summary Card */}
@@ -110,6 +121,14 @@ export default function Revenues() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex space-x-reverse space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => window.print()}
+                          data-testid={`button-print-revenue-${revenue.id}`}
+                        >
+                          <Printer size={16} />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"

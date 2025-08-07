@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Edit, Trash2, Mail, Phone, MapPin } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Mail, Phone, MapPin, Printer } from "lucide-react";
 import CustomerForm from "@/components/customer/customer-form";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -38,10 +38,10 @@ export default function Customers() {
     },
   });
 
-  const filteredCustomers = customers?.filter((customer: any) =>
+  const filteredCustomers = customers && Array.isArray(customers) ? customers.filter((customer: any) =>
     customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     customer.email?.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+  ) : [];
 
   const handleDeleteCustomer = async (customerId: string, customerName: string) => {
     if (window.confirm(`هل أنت متأكد من حذف العميل "${customerName}"؟`)) {
@@ -81,13 +81,23 @@ export default function Customers() {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
         </div>
         
-        <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-primary text-white hover:bg-blue-700" data-testid="button-add-customer">
-              <Plus className="ml-2" size={16} />
-              إضافة عميل جديد
-            </Button>
-          </DialogTrigger>
+        <div className="flex space-x-reverse space-x-3">
+          <Button 
+            variant="outline" 
+            onClick={() => window.print()}
+            data-testid="button-print-customers"
+          >
+            <Printer className="ml-2" size={16} />
+            طباعة القائمة
+          </Button>
+          
+          <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-primary text-white hover:bg-blue-700" data-testid="button-add-customer">
+                <Plus className="ml-2" size={16} />
+                إضافة عميل جديد
+              </Button>
+            </DialogTrigger>
           <DialogContent dir="rtl">
             <DialogHeader>
               <DialogTitle>إضافة عميل جديد</DialogTitle>
@@ -95,6 +105,7 @@ export default function Customers() {
             <CustomerForm onSuccess={() => setIsCreateModalOpen(false)} />
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Customers Grid */}

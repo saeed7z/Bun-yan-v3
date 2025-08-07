@@ -243,6 +243,7 @@ export class MemStorage implements IStorage {
         ...item,
         id: itemId,
         invoiceId: id,
+        documentNumber: item.documentNumber || null,
       };
       this.invoiceItems.set(itemId, invoiceItem);
       createdItems.push(invoiceItem);
@@ -313,7 +314,11 @@ export class MemStorage implements IStorage {
 
   async createInvoiceItem(item: InsertInvoiceItem): Promise<InvoiceItem> {
     const id = randomUUID();
-    const invoiceItem: InvoiceItem = { ...item, id };
+    const invoiceItem: InvoiceItem = { 
+      ...item, 
+      id,
+      documentNumber: item.documentNumber || null 
+    };
     this.invoiceItems.set(id, invoiceItem);
     return invoiceItem;
   }

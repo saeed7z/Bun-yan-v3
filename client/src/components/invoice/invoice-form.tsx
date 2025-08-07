@@ -20,6 +20,7 @@ const invoiceFormSchema = z.object({
   notes: z.string().optional(),
   items: z.array(z.object({
     description: z.string().min(1, "يجب إدخال وصف الخدمة"),
+    documentNumber: z.string().optional(),
     quantity: z.string().min(1, "يجب إدخال الكمية").refine(val => parseFloat(val) > 0, "الكمية يجب أن تكون أكبر من صفر"),
     price: z.string().min(1, "يجب إدخال السعر").refine(val => parseFloat(val) > 0, "السعر يجب أن يكون أكبر من صفر"),
   })).min(1, "يجب إضافة عنصر واحد على الأقل"),
@@ -53,9 +54,10 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
       discount: invoice?.discount || "0",
       items: invoice?.items ? invoice.items.map((item: any) => ({
         description: item.description,
+        documentNumber: item.documentNumber || "",
         quantity: item.quantity,
         price: item.price,
-      })) : [{ description: "", quantity: "", price: "" }],
+      })) : [{ description: "", documentNumber: "", quantity: "", price: "" }],
     },
   });
 
@@ -152,10 +154,10 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
 
     const items = data.items.map(item => ({
       description: item.description,
+      documentNumber: item.documentNumber || null,
       quantity: item.quantity,
       price: item.price,
       total: (parseFloat(item.quantity) * parseFloat(item.price)).toFixed(2),
-      invoiceId: "", // Will be set in backend
     }));
 
     if (invoice) {
@@ -278,11 +280,11 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
               <SelectValue placeholder="اختر العميل" />
             </SelectTrigger>
             <SelectContent>
-              {customers?.map((customer: any) => (
+              {customers && Array.isArray(customers) ? customers.map((customer: any) => (
                 <SelectItem key={customer.id} value={customer.id}>
                   {customer.name}
                 </SelectItem>
-              ))}
+              )) : null}
             </SelectContent>
           </Select>
           {form.formState.errors.customerId && (
@@ -318,7 +320,7 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => append({ description: "", quantity: "", price: "" })}
+            onClick={() => append({ description: "", documentNumber: "", quantity: "", price: "" })}
             data-testid="button-add-item"
           >
             <Plus className="ml-1" size={16} />
@@ -330,7 +332,7 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
           {fields.map((field, index) => (
             <Card key={field.id} className="p-4 bg-gray-50">
               <div className="grid grid-cols-12 gap-3 items-center">
-                <div className="col-span-5">
+                <div className="col-span-4">
                   <Input
                     {...form.register(`items.${index}.description`)}
                     placeholder="وصف الخدمة/المنتج"
@@ -338,7 +340,24 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
                     data-testid={`input-item-description-${index}`}
                   />
                 </div>
-
+                <div className="col-span-2">
+                  <Input
+                    {...form.register(`items.${index}.documentNumber`)}
+                    placeholder="رقم السند (اختياري)"
+                    className="text-sm"
+                    data-testid={`input-item-document-number-${index}`}
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Input
+                    {...form.register(`items.${index}.quantity`)}
+                    type="number"
+                    step="0.01"
+                    placeholder="الكمية"
+                    className="text-sm"
+                    data-testid={`input-item-quantity-${index}`}
+                  />
+                </div>
                 <div className="col-span-2">
                   <Input
                     {...form.register(`items.${index}.price`)}
@@ -349,8 +368,15 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
                     data-testid={`input-item-price-${index}`}
                   />
                 </div>
-                
-                <div className="col-span-3">
+                <div className="col-span-1">
+                  <Input
+                    value={`₪${((parseFloat(watchedItems[index]?.quantity) || 0) * (parseFloat(watchedItems[index]?.price) || 0)).toFixed(2)}`}
+                    readOnly
+                    className="bg-gray-100 text-sm"
+                    data-testid={`text-item-total-${index}`}
+                  />
+                </div>
+                <div className="col-span-1">
                   {fields.length > 1 && (
                     <Button
                       type="button"
@@ -368,6 +394,7 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
               {form.formState.errors.items?.[index] && (
                 <div className="mt-2 text-sm text-destructive">
                   {form.formState.errors.items[index]?.description?.message ||
+                   form.formState.errors.items[index]?.documentNumber?.message ||
                    form.formState.errors.items[index]?.quantity?.message ||
                    form.formState.errors.items[index]?.price?.message}
                 </div>

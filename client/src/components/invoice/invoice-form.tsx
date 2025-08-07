@@ -21,6 +21,12 @@ const invoiceFormSchema = z.object({
   items: z.array(z.object({
     description: z.string().min(1, "يجب إدخال وصف الخدمة"),
     documentNumber: z.string().optional(),
+    // Commercial meter fields
+    meterNumber: z.string().optional(),
+    previousReading: z.string().optional(),
+    currentReading: z.string().optional(),
+    unitPrice: z.string().optional(),
+    // Regular price field
     price: z.string().min(1, "يجب إدخال السعر").refine(val => parseFloat(val) > 0, "السعر يجب أن يكون أكبر من صفر"),
   })).min(1, "يجب إضافة عنصر واحد على الأقل"),
   discount: z.string().optional(),
@@ -54,8 +60,12 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
       items: invoice?.items ? invoice.items.map((item: any) => ({
         description: item.description,
         documentNumber: item.documentNumber || "",
+        meterNumber: item.meterNumber || "",
+        previousReading: item.previousReading || "",
+        currentReading: item.currentReading || "",
+        unitPrice: item.unitPrice || "",
         price: item.price,
-      })) : [{ description: "", documentNumber: "", price: "" }],
+      })) : [{ description: "", documentNumber: "", meterNumber: "", previousReading: "", currentReading: "", unitPrice: "", price: "" }],
     },
   });
 
@@ -118,9 +128,23 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
   useEffect(() => {
     let newSubtotal = 0;
     
-    watchedItems?.forEach((item) => {
-      const price = parseFloat(item.price) || 0;
-      newSubtotal += price;
+    watchedItems?.forEach((item, index) => {
+      // For commercial meter items, calculate based on meter readings
+      if (invoiceType === "commercial" && item.previousReading && item.currentReading && item.unitPrice) {
+        const previousReading = parseFloat(item.previousReading) || 0;
+        const currentReading = parseFloat(item.currentReading) || 0;
+        const unitPrice = parseFloat(item.unitPrice) || 0;
+        const consumption = currentReading - previousReading;
+        const calculatedTotal = consumption * unitPrice;
+        
+        // Update the price field with calculated total
+        form.setValue(`items.${index}.price`, calculatedTotal.toString());
+        newSubtotal += calculatedTotal;
+      } else {
+        // Regular calculation for non-meter items
+        const price = parseFloat(item.price) || 0;
+        newSubtotal += price;
+      }
     });
 
     const discount = parseFloat(watchedDiscount) || 0;
@@ -152,6 +176,10 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
     const items = data.items.map(item => ({
       description: item.description,
       documentNumber: item.documentNumber || null,
+      meterNumber: item.meterNumber || null,
+      previousReading: item.previousReading || null,
+      currentReading: item.currentReading || null,
+      unitPrice: item.unitPrice || null,
       price: item.price,
       total: parseFloat(item.price).toFixed(2),
     }));
@@ -172,6 +200,10 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
       items: form.watch("items").map((item: any, index: number) => ({
         description: item.description || `عنصر ${index + 1}`,
         documentNumber: item.documentNumber || "",
+        meterNumber: item.meterNumber || "",
+        previousReading: item.previousReading || "",
+        currentReading: item.currentReading || "",
+        unitPrice: item.unitPrice || "",
         price: item.price || "0",
         total: (parseFloat(item.price) || 0).toFixed(2)
       })),
@@ -230,17 +262,35 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
     <table class="items-table">
         <thead>
             <tr>
-                <th>الوصف</th>
-                <th>رقم السند</th>
-                <th>المبلغ</th>
+                ${invoiceType === "commercial" ? `
+                    <th>الوصف</th>
+                    <th>رقم العداد</th>
+                    <th>القراءة السابقة</th>
+                    <th>القراءة الحالية</th>
+                    <th>قيمة الوحدة</th>
+                    <th>الإجمالي</th>
+                ` : `
+                    <th>الوصف</th>
+                    <th>رقم السند</th>
+                    <th>المبلغ</th>
+                `}
             </tr>
         </thead>
         <tbody>
             ${(invoiceData.items || []).map((item: any) => `
                 <tr>
-                    <td>${item.description}</td>
-                    <td>${item.documentNumber || ''}</td>
-                    <td>﷼${parseFloat(item.price).toFixed(2)}</td>
+                    ${invoiceType === "commercial" ? `
+                        <td>${item.description}</td>
+                        <td>${item.meterNumber || ''}</td>
+                        <td>${item.previousReading || ''}</td>
+                        <td>${item.currentReading || ''}</td>
+                        <td>﷼${parseFloat(item.unitPrice || 0).toFixed(2)}</td>
+                        <td>﷼${parseFloat(item.price).toFixed(2)}</td>
+                    ` : `
+                        <td>${item.description}</td>
+                        <td>${item.documentNumber || ''}</td>
+                        <td>﷼${parseFloat(item.price).toFixed(2)}</td>
+                    `}
                 </tr>
             `).join('')}
         </tbody>
@@ -314,7 +364,7 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => append({ description: "", documentNumber: "", price: "" })}
+            onClick={() => append({ description: "", documentNumber: "", meterNumber: "", previousReading: "", currentReading: "", unitPrice: "", price: "" })}
             data-testid="button-add-item"
           >
             <Plus className="ml-1" size={16} />
@@ -325,52 +375,134 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
         <div className="space-y-3">
           {fields.map((field, index) => (
             <Card key={field.id} className="p-4 bg-gray-50">
-              <div className="grid grid-cols-12 gap-3 items-center">
-                <div className="col-span-5">
-                  <Input
-                    {...form.register(`items.${index}.description`)}
-                    placeholder="وصف الخدمة/المنتج"
-                    className="text-sm"
-                    data-testid={`input-item-description-${index}`}
-                  />
+              {invoiceType === "commercial" ? (
+                // Commercial meter layout
+                <div className="grid grid-cols-12 gap-2 items-center">
+                  <div className="col-span-3">
+                    <Input
+                      {...form.register(`items.${index}.description`)}
+                      placeholder="وصف الخدمة/المنتج"
+                      className="text-sm"
+                      data-testid={`input-item-description-${index}`}
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Input
+                      {...form.register(`items.${index}.meterNumber`)}
+                      placeholder="رقم العداد"
+                      className="text-sm"
+                      data-testid={`input-item-meter-number-${index}`}
+                    />
+                  </div>
+                  <div className="col-span-1">
+                    <Input
+                      {...form.register(`items.${index}.previousReading`)}
+                      type="number"
+                      step="0.01"
+                      placeholder="القراءة السابقة"
+                      className="text-sm"
+                      data-testid={`input-item-previous-reading-${index}`}
+                    />
+                  </div>
+                  <div className="col-span-1">
+                    <Input
+                      {...form.register(`items.${index}.currentReading`)}
+                      type="number"
+                      step="0.01"
+                      placeholder="القراءة الحالية"
+                      className="text-sm"
+                      data-testid={`input-item-current-reading-${index}`}
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Input
+                      {...form.register(`items.${index}.unitPrice`)}
+                      type="number"
+                      step="0.01"
+                      placeholder="قيمة الوحدة (﷼)"
+                      className="text-sm"
+                      data-testid={`input-item-unit-price-${index}`}
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Input
+                      {...form.register(`items.${index}.price`)}
+                      type="number"
+                      step="0.01"
+                      placeholder="الإجمالي (﷼)"
+                      className="text-sm bg-gray-100"
+                      readOnly
+                      data-testid={`input-item-price-${index}`}
+                    />
+                  </div>
+                  <div className="col-span-1">
+                    {fields.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => remove(index)}
+                        className="text-destructive hover:text-destructive"
+                        data-testid={`button-remove-item-${index}`}
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <div className="col-span-3">
-                  <Input
-                    {...form.register(`items.${index}.documentNumber`)}
-                    placeholder="رقم السند (اختياري)"
-                    className="text-sm"
-                    data-testid={`input-item-document-number-${index}`}
-                  />
+              ) : (
+                // Regular invoice layout
+                <div className="grid grid-cols-12 gap-3 items-center">
+                  <div className="col-span-5">
+                    <Input
+                      {...form.register(`items.${index}.description`)}
+                      placeholder="وصف الخدمة/المنتج"
+                      className="text-sm"
+                      data-testid={`input-item-description-${index}`}
+                    />
+                  </div>
+                  <div className="col-span-3">
+                    <Input
+                      {...form.register(`items.${index}.documentNumber`)}
+                      placeholder="رقم السند (اختياري)"
+                      className="text-sm"
+                      data-testid={`input-item-document-number-${index}`}
+                    />
+                  </div>
+                  <div className="col-span-3">
+                    <Input
+                      {...form.register(`items.${index}.price`)}
+                      type="number"
+                      step="0.01"
+                      placeholder="المبلغ (﷼)"
+                      className="text-sm"
+                      data-testid={`input-item-price-${index}`}
+                    />
+                  </div>
+                  <div className="col-span-1">
+                    {fields.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => remove(index)}
+                        className="text-destructive hover:text-destructive"
+                        data-testid={`button-remove-item-${index}`}
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <div className="col-span-3">
-                  <Input
-                    {...form.register(`items.${index}.price`)}
-                    type="number"
-                    step="0.01"
-                    placeholder="المبلغ (﷼)"
-                    className="text-sm"
-                    data-testid={`input-item-price-${index}`}
-                  />
-                </div>
-                <div className="col-span-1">
-                  {fields.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => remove(index)}
-                      className="text-destructive hover:text-destructive"
-                      data-testid={`button-remove-item-${index}`}
-                    >
-                      <Trash2 size={16} />
-                    </Button>
-                  )}
-                </div>
-              </div>
+              )}
               {form.formState.errors.items?.[index] && (
                 <div className="mt-2 text-sm text-destructive">
                   {form.formState.errors.items[index]?.description?.message ||
                    form.formState.errors.items[index]?.documentNumber?.message ||
+                   form.formState.errors.items[index]?.meterNumber?.message ||
+                   form.formState.errors.items[index]?.previousReading?.message ||
+                   form.formState.errors.items[index]?.currentReading?.message ||
+                   form.formState.errors.items[index]?.unitPrice?.message ||
                    form.formState.errors.items[index]?.price?.message}
                 </div>
               )}

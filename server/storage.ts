@@ -103,7 +103,11 @@ export class MemStorage implements IStorage {
       notes: ""
     }, [
       {
-        description: "خدمات تسويق رقمي",
+        description: "استهلاك الكهرباء",
+        meterNumber: "12345",
+        previousReading: "1000.00",
+        currentReading: "1250.00",
+        unitPrice: "6.41",
         price: "1602.56",
         total: "1602.56"
       }
@@ -123,9 +127,38 @@ export class MemStorage implements IStorage {
       notes: "خدمات تقنية متقدمة"
     }, [
       {
-        description: "تطوير نظام إدارة",
+        description: "استهلاك المياه",
+        meterNumber: "67890", 
+        previousReading: "500.00",
+        currentReading: "750.00",
+        unitPrice: "18.53",
         price: "4632.48",
         total: "4632.48"
+      }
+    ]);
+
+    // Add a commercial meter invoice sample
+    const commercialInvoice = await this.createInvoice({
+      number: "INV-2024-004",
+      customerId: customer1.id,
+      date: new Date("2024-01-20"),
+      dueDate: new Date("2024-02-20"),
+      status: "pending",
+      type: "commercial",
+      subtotal: "850.00",
+      tax: "144.50",
+      discount: "0",
+      total: "994.50",
+      notes: "فاتورة عداد كهرباء تجاري"
+    }, [
+      {
+        description: "استهلاك الكهرباء - مبنى تجاري",
+        meterNumber: "ELC-001",
+        previousReading: "15000.00",
+        currentReading: "15200.00",
+        unitPrice: "4.25",
+        price: "850.00",
+        total: "850.00"
       }
     ]);
   }

@@ -34,6 +34,12 @@ export const invoiceItems = pgTable("invoice_items", {
   invoiceId: varchar("invoice_id").notNull().references(() => invoices.id),
   description: text("description").notNull(),
   documentNumber: text("document_number"), // Optional document number field
+  // Commercial meter fields
+  meterNumber: text("meter_number"), // رقم العداد
+  previousReading: decimal("previous_reading", { precision: 10, scale: 2 }), // القراءة السابقة
+  currentReading: decimal("current_reading", { precision: 10, scale: 2 }), // القراءة الحالية
+  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }), // قيمة الوحدة
+  // Regular fields
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
 });

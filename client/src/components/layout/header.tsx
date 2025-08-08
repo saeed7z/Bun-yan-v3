@@ -94,6 +94,15 @@ export default function Header() {
                 >
                   المصروفات
                 </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => {
+                    setSelectedInvoiceType("payment");
+                    setIsInvoiceModalOpen(true);
+                  }}
+                  data-testid="menu-payment"
+                >
+                  سداد الفواتير
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             
@@ -105,6 +114,7 @@ export default function Header() {
                            selectedInvoiceType === "commercial" ? "فاتورة عداد تجاري" : 
                            selectedInvoiceType === "statement" ? "كشف حساب العملاء" :
                            selectedInvoiceType === "revenue" ? "إيراد جديد" :
+                           selectedInvoiceType === "payment" ? "سداد فاتورة" :
                            "مصروف جديد"}
                   </DialogTitle>
                 </DialogHeader>

@@ -14,18 +14,17 @@ export default function Revenues() {
   const { toast } = useToast();
   const { formatAmount } = useCurrency();
 
-  // Placeholder data - will be implemented with proper backend
-  const revenues = [
-    { id: 1, description: "رسوم شهرية - شقة 101", amount: "1500.00", date: "2024-01-15", category: "رسوم شهرية" },
-    { id: 2, description: "فاتورة كهرباء - محل تجاري", amount: "850.00", date: "2024-01-14", category: "عداد تجاري" },
-    { id: 3, description: "رسوم صيانة", amount: "300.00", date: "2024-01-13", category: "أخرى" },
-  ];
+  const { data: revenues, isLoading } = useQuery({
+    queryKey: ["/api/revenues"],
+  });
 
-  const filteredRevenues = revenues.filter((revenue) =>
+  const revenueList = revenues && Array.isArray(revenues) ? revenues : [];
+  
+  const filteredRevenues = revenueList.filter((revenue: any) =>
     revenue.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const totalRevenues = revenues.reduce((sum, revenue) => sum + parseFloat(revenue.amount), 0);
+  const totalRevenues = revenueList.reduce((sum: number, revenue: any) => sum + parseFloat(revenue.amount), 0);
 
   return (
     <div className="p-6">
@@ -80,8 +79,15 @@ export default function Revenues() {
         </Card>
       </div>
 
-      {/* Revenues Table */}
-      {filteredRevenues.length > 0 ? (
+      {/* Loading State */}
+      {isLoading ? (
+        <Card className="animate-pulse">
+          <CardContent className="p-12">
+            <div className="h-32 bg-gray-200 rounded"></div>
+          </CardContent>
+        </Card>
+      ) : (
+      filteredRevenues.length > 0 ? (
         <Card>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -162,6 +168,7 @@ export default function Revenues() {
             </div>
           </CardContent>
         </Card>
+      )
       )}
     </div>
   );

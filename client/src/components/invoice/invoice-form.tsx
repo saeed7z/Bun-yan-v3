@@ -32,6 +32,7 @@ const createInvoiceFormSchema = (invoiceType?: string) => z.object({
   discount: z.string().optional(),
 });
 
+const invoiceFormSchema = createInvoiceFormSchema();
 type FormData = z.infer<typeof invoiceFormSchema>;
 
 interface InvoiceFormProps {
@@ -65,7 +66,7 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
         currentReading: item.currentReading || "",
         unitPrice: item.unitPrice || "",
         price: item.price || "0",
-      })) : [{ description: "", documentNumber: "", meterNumber: "", previousReading: "", currentReading: "", unitPrice: "", price: "0" }],
+      })) : [{ description: invoiceType === "payment" ? "سداد فاتورة" : "", documentNumber: "", meterNumber: "", previousReading: "", currentReading: "", unitPrice: "", price: "0" }],
     },
   });
 
@@ -173,12 +174,12 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
       customerId: data.customerId,
       date: new Date(data.date),
       dueDate: null,
-      status: invoice?.status || "pending",
+      status: invoice?.status || (invoiceType === "payment" ? "paid" : "pending"),
       type: invoiceType || "monthly",
       subtotal: subtotal.toFixed(2),
-      tax: tax.toFixed(2),
-      discount: ((subtotal * (parseFloat(data.discount || "0") / 100))).toFixed(2),
-      total: total.toFixed(2),
+      tax: invoiceType === "payment" ? "0" : tax.toFixed(2),
+      discount: invoiceType === "payment" ? "0" : ((subtotal * (parseFloat(data.discount || "0") / 100))).toFixed(2),
+      total: invoiceType === "payment" ? subtotal.toFixed(2) : total.toFixed(2),
       notes: data.notes || "",
     };
 
@@ -196,7 +197,7 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
     if (invoice) {
       updateInvoiceMutation.mutate({ invoice: invoiceData, items });
     } else {
-      createInvoiceMutation.mutate({ invoice: invoiceData, items });
+      createInvoiceMutation.mutate({ invoice: invoiceData, items, isPayment: invoiceType === "payment" });
     }
   };
 

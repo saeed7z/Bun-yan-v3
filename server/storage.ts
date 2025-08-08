@@ -1,6 +1,15 @@
 import { type Customer, type InsertCustomer, type Invoice, type InsertInvoice, type InvoiceItem, type InsertInvoiceItem, type InvoiceWithCustomer, type CustomerWithStats } from "@shared/schema";
 import { randomUUID } from "crypto";
 
+interface Revenue {
+  id: string;
+  description: string;
+  amount: string;
+  date: string;
+  category: string;
+  customerId?: string;
+}
+
 export interface IStorage {
   // Customer operations
   getCustomers(): Promise<Customer[]>;
@@ -34,6 +43,16 @@ export interface IStorage {
     activeCustomers: number;
   }>;
 
+  // Revenue operations
+  getRevenues(): Promise<Revenue[]>;
+  addRevenue(revenue: {
+    description: string;
+    amount: string;
+    date: string;
+    category: string;
+    customerId?: string;
+  }): Promise<Revenue>;
+
   // Customer account details
   getCustomerAccountDetails(customerId: string): Promise<{
     customer: Customer;
@@ -59,6 +78,7 @@ export class MemStorage implements IStorage {
   private customers: Map<string, Customer> = new Map();
   private invoices: Map<string, Invoice> = new Map();
   private invoiceItems: Map<string, InvoiceItem> = new Map();
+  private revenues: Map<string, Revenue> = new Map();
 
   constructor() {
     // Initialize with some sample data
@@ -424,6 +444,26 @@ export class MemStorage implements IStorage {
     };
   }
 
+  async getRevenues(): Promise<Revenue[]> {
+    return Array.from(this.revenues.values())
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }
+
+  async addRevenue(revenue: {
+    description: string;
+    amount: string;
+    date: string;
+    category: string;
+    customerId?: string;
+  }): Promise<Revenue> {
+    const newRevenue: Revenue = {
+      id: randomUUID(),
+      ...revenue
+    };
+    this.revenues.set(newRevenue.id, newRevenue);
+    return newRevenue;
+  }
+
   async getCustomerAccountDetails(customerId: string): Promise<{
     customer: Customer;
     transactions: Array<{
@@ -486,8 +526,8 @@ export class MemStorage implements IStorage {
         }
       }
       
-      // For credit transactions (payments/revenues)
-      else if (invoice.type === 'revenue' && invoice.status === 'paid') {
+      // For credit transactions (payments)
+      else if (invoice.type === 'payment' && invoice.status === 'paid') {
         for (const item of items) {
           transactions.push({
             id: `credit-${invoice.id}-${item.id}`,
@@ -502,6 +542,25 @@ export class MemStorage implements IStorage {
           totalCredit += parseFloat(item.total);
         }
       }
+    }
+
+    // Add revenues from this customer as credit transactions
+    const customerRevenues = Array.from(this.revenues.values())
+      .filter(revenue => revenue.customerId === customerId)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    for (const revenue of customerRevenues) {
+      transactions.push({
+        id: `credit-revenue-${revenue.id}`,
+        type: 'credit',
+        entryNumber: entryNumber++,
+        amount: revenue.amount,
+        description: revenue.description,
+        documentNumber: 'ايراد',
+        date: revenue.date,
+        invoiceNumber: `REV-${revenue.id.substring(0, 8)}`
+      });
+      totalCredit += parseFloat(revenue.amount);
     }
 
     const currentBalance = totalDebit - totalCredit;

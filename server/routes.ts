@@ -9,7 +9,8 @@ const createInvoiceWithItemsSchema = z.object({
   items: z.array(insertInvoiceItemSchema.omit({ invoiceId: true }).extend({
     // Allow price to be optional for commercial invoices
     price: z.string().optional().default("0")
-  }))
+  })),
+  isPayment: z.boolean().optional().default(false)
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -122,8 +123,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/invoices", async (req, res) => {
     try {
-      const { invoice, items } = createInvoiceWithItemsSchema.parse(req.body);
+      const { invoice, items, isPayment } = createInvoiceWithItemsSchema.parse(req.body);
       const createdInvoice = await storage.createInvoice(invoice, items);
+      
+      // If this is a payment, add it to revenues and customer account as credit
+      if (isPayment) {
+        await storage.addRevenue({
+          description: `سداد فاتورة - ${invoice.notes || 'العميل'}`,
+          amount: invoice.total,
+          date: invoice.date.toISOString(),
+          category: "سداد فواتير",
+          customerId: invoice.customerId
+        });
+      }
+      
       res.status(201).json(createdInvoice);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -180,6 +193,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.send(htmlContent);
     } catch (error) {
       res.status(500).json({ message: "Failed to generate PDF" });
+    }
+  });
+
+  // Revenue routes
+  app.get("/api/revenues", async (_req, res) => {
+    try {
+      const revenues = await storage.getRevenues();
+      res.json(revenues);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch revenues" });
     }
   });
 

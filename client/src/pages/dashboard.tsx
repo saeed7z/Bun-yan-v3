@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useCurrency } from '@/contexts/currency-context';
 import { 
   TrendingUp, 
   CheckCircle, 
@@ -8,11 +10,13 @@ import {
   Users, 
   Building,
   Store,
-  Briefcase
+  Briefcase,
+  Printer
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function Dashboard() {
+  const { formatAmount } = useCurrency();
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["/api/dashboard/stats"],
   });
@@ -41,8 +45,8 @@ export default function Dashboard() {
     );
   }
 
-  const recentInvoices = invoices?.slice(0, 5) || [];
-  const displayCustomers = topCustomers?.slice(0, 3) || [];
+  const recentInvoices = (invoices && Array.isArray(invoices)) ? invoices.slice(0, 5) : [];
+  const displayCustomers = (topCustomers && Array.isArray(topCustomers)) ? topCustomers.slice(0, 3) : [];
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -63,6 +67,17 @@ export default function Dashboard() {
 
   return (
     <div className="p-6">
+      {/* Print Button */}
+      <div className="mb-6 flex justify-end">
+        <Button 
+          variant="outline" 
+          onClick={() => window.print()}
+          className="no-print"
+        >
+          <Printer className="ml-2" size={16} />
+          طباعة التقرير
+        </Button>
+      </div>
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <Card className="border border-gray-100">
@@ -71,7 +86,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-sm text-gray-600 mb-1">إجمالي الايرادات</p>
                 <p className="text-2xl font-bold text-gray-900" data-testid="stat-total-sales">
-                  ﷼{parseFloat(stats?.totalSales || "0").toLocaleString()}
+                  {formatAmount((stats as any)?.totalSales || "0")}
                 </p>
                 <p className="text-sm text-success">+12.5% عن الشهر السابق</p>
               </div>
@@ -88,7 +103,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-sm text-gray-600 mb-1">الفواتير المدفوعة</p>
                 <p className="text-2xl font-bold text-gray-900" data-testid="stat-paid-invoices">
-                  {stats?.paidInvoices || 0}
+                  {(stats as any)?.paidInvoices || 0}
                 </p>
                 <p className="text-sm text-success">+5.2% عن الشهر السابق</p>
               </div>
@@ -105,7 +120,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-sm text-gray-600 mb-1">الفواتير المعلقة</p>
                 <p className="text-2xl font-bold text-gray-900" data-testid="stat-pending-invoices">
-                  {stats?.pendingInvoices || 0}
+                  {(stats as any)?.pendingInvoices || 0}
                 </p>
                 <p className="text-sm text-warning">قيد الانتظار</p>
               </div>
@@ -122,7 +137,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-sm text-gray-600 mb-1">العملاء النشطون</p>
                 <p className="text-2xl font-bold text-gray-900" data-testid="stat-active-customers">
-                  {stats?.activeCustomers || 0}
+                  {(stats as any)?.activeCustomers || 0}
                 </p>
                 <p className="text-sm text-success">+8.1% عن الشهر السابق</p>
               </div>
@@ -173,7 +188,7 @@ export default function Dashboard() {
                             {invoice.number}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ﷼{parseFloat(invoice.total).toLocaleString()}
+                            {formatAmount(invoice.total)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             {getStatusBadge(invoice.status)}
@@ -222,7 +237,7 @@ export default function Dashboard() {
                         </div>
                         <div className="text-left">
                           <p className="text-sm font-medium text-gray-900">
-                            ﷼{parseFloat(customer.totalAmount).toLocaleString()}
+                            {formatAmount(customer.totalAmount)}
                           </p>
                           <p className="text-xs text-success">+5.2%</p>
                         </div>

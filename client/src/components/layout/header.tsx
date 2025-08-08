@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Plus, Search, ChevronDown } from "lucide-react";
+import { CurrencySelector } from "@/components/ui/currency-selector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -38,6 +39,7 @@ export default function Header() {
           </div>
           
           <div className="flex items-center space-x-reverse space-x-4">
+            <CurrencySelector />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button className="bg-primary text-white hover:bg-blue-700" data-testid="button-new-invoice">

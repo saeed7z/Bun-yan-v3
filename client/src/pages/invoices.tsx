@@ -10,6 +10,7 @@ import { Plus, Search, Eye, Download, Trash2, Edit, Printer } from "lucide-react
 import InvoiceForm from "@/components/invoice/invoice-form";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useCurrency } from "@/contexts/currency-context";
 import { cn } from "@/lib/utils";
 
 export default function Invoices() {
@@ -18,6 +19,7 @@ export default function Invoices() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const { toast } = useToast();
+  const { formatAmount } = useCurrency();
 
   const { data: invoices, isLoading } = useQuery({
     queryKey: ["/api/invoices"],
@@ -181,7 +183,17 @@ export default function Invoices() {
           </Select>
         </div>
         
-        <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+        <div className="flex gap-3">
+          <Button 
+            variant="outline" 
+            onClick={() => window.print()}
+            className="no-print"
+          >
+            <Printer className="ml-2" size={16} />
+            طباعة قائمة الفواتير
+          </Button>
+          
+          <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
           <DialogTrigger asChild>
             <Button className="bg-primary text-white hover:bg-blue-700" data-testid="button-add-invoice">
               <Plus className="ml-2" size={16} />
@@ -195,6 +207,7 @@ export default function Invoices() {
             <InvoiceForm onSuccess={() => setIsCreateModalOpen(false)} />
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Invoices Table */}
@@ -234,7 +247,7 @@ export default function Invoices() {
                       {getCustomerName(invoice.customerId)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      ﷼{parseFloat(invoice.total).toLocaleString()}
+                      {formatAmount(invoice.total)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(invoice.status)}

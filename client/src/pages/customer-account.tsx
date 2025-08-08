@@ -3,9 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, FileText, DollarSign, Calendar, Hash } from "lucide-react";
+import { ArrowRight, FileText, DollarSign, Calendar, Hash, Printer } from "lucide-react";
 import { Link } from "wouter";
 import { Separator } from "@/components/ui/separator";
+import { useCurrency } from "@/contexts/currency-context";
 
 interface CustomerAccountData {
   customer: {
@@ -36,6 +37,7 @@ interface CustomerAccountData {
 export default function CustomerAccount() {
   const params = useParams();
   const customerId = params.id;
+  const { formatAmount } = useCurrency();
 
   const { data: accountData, isLoading, error } = useQuery<CustomerAccountData>({
     queryKey: [`/api/customers/${customerId}/account`],
@@ -83,12 +85,21 @@ export default function CustomerAccount() {
           <h1 className="text-2xl font-bold text-gray-900">كشف حساب العميل</h1>
           <p className="text-gray-600 mt-1">{accountData.customer.name}</p>
         </div>
-        <Link href="/customers">
-          <Button variant="outline">
-            <ArrowRight className="ml-2" size={16} />
-            العودة للعملاء
+        <div className="flex gap-3">
+          <Button 
+            variant="outline" 
+            onClick={() => window.print()}
+          >
+            <Printer className="ml-2" size={16} />
+            طباعة كشف الحساب
           </Button>
-        </Link>
+          <Link href="/customers">
+            <Button variant="outline">
+              <ArrowRight className="ml-2" size={16} />
+              العودة للعملاء
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Customer Info Card */}
@@ -139,16 +150,16 @@ export default function CustomerAccount() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
               <p className="text-red-600 font-semibold">إجمالي المدين</p>
-              <p className="text-2xl font-bold text-red-700">₪{parseFloat(accountData.totals.totalDebit).toFixed(2)}</p>
+              <p className="text-2xl font-bold text-red-700">{formatAmount(accountData.totals.totalDebit)}</p>
             </div>
             <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
               <p className="text-green-600 font-semibold">إجمالي الدائن</p>
-              <p className="text-2xl font-bold text-green-700">₪{parseFloat(accountData.totals.totalCredit).toFixed(2)}</p>
+              <p className="text-2xl font-bold text-green-700">{formatAmount(accountData.totals.totalCredit)}</p>
             </div>
             <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
               <p className="text-blue-600 font-semibold">الرصيد الحالي</p>
               <p className={`text-2xl font-bold ${parseFloat(accountData.totals.currentBalance) >= 0 ? 'text-red-700' : 'text-green-700'}`}>
-                ₪{Math.abs(parseFloat(accountData.totals.currentBalance)).toFixed(2)}
+                {formatAmount(Math.abs(parseFloat(accountData.totals.currentBalance)))}
                 {parseFloat(accountData.totals.currentBalance) >= 0 ? ' مديون' : ' دائن'}
               </p>
             </div>
@@ -183,7 +194,7 @@ export default function CustomerAccount() {
                     <div className="grid grid-cols-1 gap-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-600">المبلغ:</span>
-                        <span className="font-semibold text-red-700">₪{parseFloat(transaction.amount).toFixed(2)}</span>
+                        <span className="font-semibold text-red-700">{formatAmount(transaction.amount)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">البيان:</span>
@@ -239,7 +250,7 @@ export default function CustomerAccount() {
                     <div className="grid grid-cols-1 gap-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-600">المبلغ:</span>
-                        <span className="font-semibold text-green-700">₪{parseFloat(transaction.amount).toFixed(2)}</span>
+                        <span className="font-semibold text-green-700">{formatAmount(transaction.amount)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">البيان:</span>

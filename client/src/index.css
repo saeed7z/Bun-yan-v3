@@ -151,3 +151,71 @@
 .status-overdue {
   @apply bg-danger/10 text-danger;
 }
+
+/* Print Styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  body {
+    -webkit-print-color-adjust: exact;
+    color-adjust: exact;
+  }
+  
+  .print-page-break {
+    page-break-before: always;
+  }
+  
+  @page {
+    margin: 15mm;
+    size: A4;
+  }
+  
+  /* Hide sidebar and header when printing */
+  .sidebar, 
+  header {
+    display: none !important;
+  }
+  
+  /* Adjust main content for print */
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+  }
+  
+  /* Card adjustments for print */
+  .card {
+    border: 1px solid #e5e7eb !important;
+    box-shadow: none !important;
+    margin-bottom: 15px !important;
+  }
+  
+  /* Text color adjustments for print */
+  .text-gray-600,
+  .text-gray-500 {
+    color: #4b5563 !important;
+  }
+  
+  .text-gray-900 {
+    color: #111827 !important;
+  }
+  
+  /* Status badge print styles */
+  .status-paid {
+    color: #16a34a !important;
+    background-color: #dcfce7 !important;
+  }
+  
+  .status-pending {
+    color: #d97706 !important;
+    background-color: #fef3c7 !important;
+  }
+  
+  .status-overdue {
+    color: #dc2626 !important;
+    background-color: #fee2e2 !important;
+  }
+}

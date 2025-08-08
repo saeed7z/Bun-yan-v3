@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Edit, Trash2, Mail, Phone, MapPin, Printer, Eye } from "lucide-react";
+import { useCurrency } from "@/contexts/currency-context";
 import CustomerForm from "@/components/customer/customer-form";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Link } from "wouter";
@@ -15,6 +16,7 @@ export default function Customers() {
   const [editingCustomer, setEditingCustomer] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
+  const { formatAmount } = useCurrency();
 
   const { data: customers, isLoading } = useQuery({
     queryKey: ["/api/customers"],
@@ -182,7 +184,7 @@ export default function Customers() {
                         data-testid={`customer-balance-${customer.id}`}
                       >
                         {parseFloat(customer.balance) > 0 
-                          ? `₪${parseFloat(customer.balance).toFixed(2)} مديون`
+                          ? `${formatAmount(customer.balance)} مديون`
                           : 'لا يوجد دين'
                         }
                       </span>

@@ -138,34 +138,6 @@ export default function CustomerAccount() {
         </CardContent>
       </Card>
 
-      {/* Account Summary */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign size={20} />
-            ملخص الحساب
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
-              <p className="text-red-600 font-semibold">إجمالي المدين</p>
-              <p className="text-2xl font-bold text-red-700">{formatAmount(accountData.totals.totalDebit)}</p>
-            </div>
-            <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
-              <p className="text-green-600 font-semibold">إجمالي الدائن</p>
-              <p className="text-2xl font-bold text-green-700">{formatAmount(accountData.totals.totalCredit)}</p>
-            </div>
-            <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-blue-600 font-semibold">الرصيد الحالي</p>
-              <p className={`text-2xl font-bold ${parseFloat(accountData.totals.currentBalance) >= 0 ? 'text-red-700' : 'text-green-700'}`}>
-                {formatAmount(Math.abs(parseFloat(accountData.totals.currentBalance)))}
-                {parseFloat(accountData.totals.currentBalance) >= 0 ? ' مديون' : ' دائن'}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Account Details - Two Columns */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -222,6 +194,14 @@ export default function CustomerAccount() {
                 لا توجد معاملات مدينة
               </div>
             )}
+            
+            {/* Total Debit */}
+            <div className="mt-4 pt-4 border-t border-red-200">
+              <div className="text-center p-4 bg-red-100 rounded-lg border border-red-300">
+                <p className="text-red-600 font-semibold text-sm">إجمالي المدين</p>
+                <p className="text-xl font-bold text-red-700">{formatAmount(accountData.totals.totalDebit)}</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -278,6 +258,31 @@ export default function CustomerAccount() {
                 لا توجد مدفوعات مسجلة
               </div>
             )}
+            
+            {/* Total Credit */}
+            <div className="mt-4 pt-4 border-t border-green-200">
+              <div className="text-center p-4 bg-green-100 rounded-lg border border-green-300">
+                <p className="text-green-600 font-semibold text-sm">إجمالي الدائن</p>
+                <p className="text-xl font-bold text-green-700">{formatAmount(accountData.totals.totalCredit)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* Current Balance - Below Both Sections */}
+      <div className="mt-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center p-6 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-blue-600 font-semibold text-lg mb-2">الرصيد الحالي</p>
+              <p className={`text-3xl font-bold ${parseFloat(accountData.totals.currentBalance) >= 0 ? 'text-red-700' : 'text-green-700'}`}>
+                {formatAmount(Math.abs(parseFloat(accountData.totals.currentBalance)))}
+                <span className="text-lg mr-2">
+                  {parseFloat(accountData.totals.currentBalance) >= 0 ? 'مديون' : 'دائن'}
+                </span>
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>

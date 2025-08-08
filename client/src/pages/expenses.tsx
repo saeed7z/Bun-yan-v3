@@ -7,10 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Edit, Trash2, TrendingDown, Printer } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useCurrency } from "@/contexts/currency-context";
 
 export default function Expenses() {
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
+  const { formatAmount } = useCurrency();
 
   // Placeholder data - will be implemented with proper backend
   const expenses = [
@@ -66,7 +68,7 @@ export default function Expenses() {
               <div>
                 <p className="text-sm text-gray-600 mb-1">إجمالي المصروفات</p>
                 <p className="text-3xl font-bold text-danger" data-testid="total-expenses">
-                  ₪{totalExpenses.toLocaleString()}
+                  {formatAmount(totalExpenses.toString())}
                 </p>
                 <p className="text-sm text-danger">هذا الشهر</p>
               </div>
@@ -114,7 +116,7 @@ export default function Expenses() {
                       </Badge>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-danger font-medium">
-                      ₪{parseFloat(expense.amount).toLocaleString()}
+                      {formatAmount(expense.amount)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(expense.date).toLocaleDateString('ar-SA')}

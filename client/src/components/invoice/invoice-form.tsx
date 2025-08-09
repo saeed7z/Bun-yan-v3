@@ -103,6 +103,10 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
       const calculatedTotal = consumption * unitPrice;
       console.log(`Result: consumption=${consumption} × ${unitPrice} = ${calculatedTotal}`);
       form.setValue(`items.${index}.price`, calculatedTotal.toFixed(2));
+      
+      // Force form re-render to trigger totals recalculation
+      form.trigger();
+      
       return calculatedTotal;
     }
     return 0;
@@ -246,6 +250,34 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
     setTax(0);
     setTotal(newTotal);
   }, [watchedItems, watchedDiscount, invoiceType, form]);
+
+  // Additional useEffect to handle price field changes 
+  useEffect(() => {
+    const subscription = form.watch((values, { name }) => {
+      if (name && name.includes('.price')) {
+        // Force recalculation when price field changes
+        setTimeout(() => {
+          const formValues = form.getValues();
+          console.log('Price field changed, recalculating totals...');
+          
+          let newSubtotal = 0;
+          formValues.items?.forEach((item, index) => {
+            const price = parseFloat(item.price?.replace(/,/g, '') || "0");
+            newSubtotal += price;
+          });
+
+          const discount = parseFloat(formValues.discount?.replace(/,/g, '') || "0");
+          const discountAmount = (newSubtotal * discount) / 100;
+          const newTotal = newSubtotal - discountAmount;
+
+          setSubtotal(newSubtotal);
+          setTotal(newTotal);
+        }, 100);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [form]);
 
   const onSubmit = (data: FormData) => {
     const invoiceData = {

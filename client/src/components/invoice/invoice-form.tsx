@@ -5,6 +5,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { FormattedNumberInput } from "@/components/ui/formatted-number-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -403,40 +404,36 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
                     />
                   </div>
                   <div className="col-span-1">
-                    <Input
-                      {...form.register(`items.${index}.previousReading`)}
-                      type="number"
-                      step="0.01"
+                    <FormattedNumberInput
+                      value={form.watch(`items.${index}.previousReading`)}
+                      onChange={(value) => form.setValue(`items.${index}.previousReading`, value)}
                       placeholder="القراءة السابقة"
                       className="text-sm"
                       data-testid={`input-item-previous-reading-${index}`}
                     />
                   </div>
                   <div className="col-span-1">
-                    <Input
-                      {...form.register(`items.${index}.currentReading`)}
-                      type="number"
-                      step="0.01"
+                    <FormattedNumberInput
+                      value={form.watch(`items.${index}.currentReading`)}
+                      onChange={(value) => form.setValue(`items.${index}.currentReading`, value)}
                       placeholder="القراءة الحالية"
                       className="text-sm"
                       data-testid={`input-item-current-reading-${index}`}
                     />
                   </div>
                   <div className="col-span-2">
-                    <Input
-                      {...form.register(`items.${index}.unitPrice`)}
-                      type="number"
-                      step="0.01"
+                    <FormattedNumberInput
+                      value={form.watch(`items.${index}.unitPrice`)}
+                      onChange={(value) => form.setValue(`items.${index}.unitPrice`, value)}
                       placeholder="قيمة الوحدة (﷼)"
                       className="text-sm"
                       data-testid={`input-item-unit-price-${index}`}
                     />
                   </div>
                   <div className="col-span-2">
-                    <Input
-                      {...form.register(`items.${index}.price`)}
-                      type="number"
-                      step="0.01"
+                    <FormattedNumberInput
+                      value={form.watch(`items.${index}.price`)}
+                      onChange={(value) => form.setValue(`items.${index}.price`, value)}
                       placeholder="الإجمالي (﷼)"
                       className="text-sm bg-gray-100"
                       readOnly
@@ -470,10 +467,9 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
                     />
                   </div>
                   <div className="col-span-3">
-                    <Input
-                      {...form.register(`items.${index}.price`)}
-                      type="number"
-                      step="0.01"
+                    <FormattedNumberInput
+                      value={form.watch(`items.${index}.price`)}
+                      onChange={(value) => form.setValue(`items.${index}.price`, value)}
                       placeholder="المبلغ (﷼)"
                       className="text-sm"
                       data-testid={`input-item-price-${index}`}
@@ -540,12 +536,11 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
               </div>
               <div className="flex justify-between text-sm items-center">
                 <span className="text-gray-600">الخصم (%):</span>
-                <Input
-                  {...form.register("discount")}
-                  type="number"
+                <FormattedNumberInput
+                  value={form.watch("discount")}
+                  onChange={(value) => form.setValue("discount", value)}
                   min="0"
                   max="100"
-                  step="0.1"
                   className="w-20 h-8 text-xs text-center"
                   placeholder="0"
                   data-testid="input-discount"

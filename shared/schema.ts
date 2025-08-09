@@ -86,6 +86,10 @@ export const insertInvoiceSchemaForAPI = insertInvoiceSchema.extend({
 // Combined schema for creating invoice with items
 export const createInvoiceWithItemsSchema = z.object({
   invoice: insertInvoiceSchemaForAPI,
-  items: z.array(insertInvoiceItemSchema),
+  items: z.array(insertInvoiceItemSchema.omit({ invoiceId: true }).extend({
+    // Allow price to be optional for commercial invoices
+    price: z.string().optional().default("0"),
+    total: z.string().optional().default("0")
+  })),
   isPayment: z.boolean().optional().default(false),
 });

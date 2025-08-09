@@ -281,7 +281,6 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
                     <th>الإجمالي</th>
                 ` : `
                     <th>الوصف</th>
-                    <th>رقم السند</th>
                     <th>المبلغ</th>
                 `}
             </tr>
@@ -294,12 +293,11 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
                         <td>${item.meterNumber || ''}</td>
                         <td>${item.previousReading || ''}</td>
                         <td>${item.currentReading || ''}</td>
-                        <td>﷼${parseFloat(item.unitPrice || 0).toFixed(2)}</td>
-                        <td>﷼${parseFloat(item.price).toFixed(2)}</td>
+                        <td>﷼${parseFloat(item.unitPrice || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td>﷼${parseFloat(item.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     ` : `
                         <td>${item.description}</td>
-                        <td>${item.documentNumber || ''}</td>
-                        <td>﷼${parseFloat(item.price).toFixed(2)}</td>
+                        <td>﷼${parseFloat(item.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     `}
                 </tr>
             `).join('')}
@@ -307,10 +305,10 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
     </table>
 
     <div class="totals">
-        <div class="total-row"><strong>المجموع الجزئي: ﷼${parseFloat(invoiceData.subtotal).toFixed(2)}</strong></div>
-        <div class="total-row"><strong>الضريبة: ﷼${parseFloat(invoiceData.tax).toFixed(2)}</strong></div>
-        <div class="total-row"><strong>الخصم: ﷼${parseFloat(invoiceData.discount).toFixed(2)}</strong></div>
-        <div class="total-row" style="font-size: 18px;"><strong>المجموع الإجمالي: ﷼${parseFloat(invoiceData.total).toFixed(2)}</strong></div>
+        <div class="total-row"><strong>المجموع الجزئي: ﷼${parseFloat(invoiceData.subtotal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
+        <div class="total-row"><strong>الضريبة: ﷼${parseFloat(invoiceData.tax).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
+        <div class="total-row"><strong>الخصم: ﷼${parseFloat(invoiceData.discount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
+        <div class="total-row" style="font-size: 18px;"><strong>المجموع الإجمالي: ﷼${parseFloat(invoiceData.total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
     </div>
 
     ${invoiceData.notes ? `<div style="margin-top: 30px;"><strong>ملاحظات:</strong><br>${invoiceData.notes}</div>` : ''}
@@ -461,22 +459,14 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
                   </div>
                 </div>
               ) : (
-                // Regular invoice layout
+                // Regular invoice layout (monthly invoices without document number)
                 <div className="grid grid-cols-12 gap-3 items-center">
-                  <div className="col-span-5">
+                  <div className="col-span-8">
                     <Input
                       {...form.register(`items.${index}.description`)}
                       placeholder="وصف الخدمة/المنتج"
                       className="text-sm"
                       data-testid={`input-item-description-${index}`}
-                    />
-                  </div>
-                  <div className="col-span-3">
-                    <Input
-                      {...form.register(`items.${index}.documentNumber`)}
-                      placeholder="رقم السند (اختياري)"
-                      className="text-sm"
-                      data-testid={`input-item-document-number-${index}`}
                     />
                   </div>
                   <div className="col-span-3">
@@ -546,7 +536,7 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
             <CardContent className="p-4 space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">المجموع الجزئي:</span>
-                <span className="font-medium" data-testid="text-subtotal">﷼{subtotal.toFixed(2)}</span>
+                <span className="font-medium" data-testid="text-subtotal">﷼{subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between text-sm items-center">
                 <span className="text-gray-600">الخصم (%):</span>
@@ -563,12 +553,12 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">الضريبة (17%):</span>
-                <span className="font-medium" data-testid="text-tax">﷼{tax.toFixed(2)}</span>
+                <span className="font-medium" data-testid="text-tax">﷼{tax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
               <div className="border-t border-gray-200 pt-3">
                 <div className="flex justify-between text-lg font-semibold">
                   <span>المجموع الإجمالي:</span>
-                  <span className="text-primary" data-testid="text-total">﷼{total.toFixed(2)}</span>
+                  <span className="text-primary" data-testid="text-total">﷼{total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
               </div>
             </CardContent>

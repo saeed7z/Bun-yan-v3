@@ -39,7 +39,11 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
 
   const formatAmount = (amount: string | number) => {
     const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-    const formatted = numAmount.toFixed(2);
+    // Format number with commas for thousands separator
+    const formatted = numAmount.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
     return `${currencyInfo.symbol}${formatted}`;
   };
 

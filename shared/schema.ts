@@ -10,6 +10,7 @@ export const customers = pgTable("customers", {
   phone: text("phone"),
   address: text("address"),
   balance: decimal("balance", { precision: 10, scale: 2 }).notNull().default("0"),
+  meterNumber: text("meter_number"), // رقم العداد التجاري للعميل
   createdAt: timestamp("created_at").defaultNow(),
 });
 

@@ -78,6 +78,35 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
 
   const watchedItems = form.watch("items");
   const watchedDiscount = form.watch("discount") || "0";
+  const watchedCustomerId = form.watch("customerId");
+
+  // Auto-fill commercial meter data when customer is selected
+  useEffect(() => {
+    if (watchedCustomerId && invoiceType === "commercial" && !invoice) {
+      // Only auto-fill for new commercial invoices
+      const fetchLastReading = async () => {
+        try {
+          const response = await fetch(`/api/customers/${watchedCustomerId}/last-reading`);
+          if (response.ok) {
+            const data = await response.json();
+            
+            // Auto-fill the first item with commercial meter data
+            const currentItems = form.getValues("items");
+            if (currentItems.length > 0) {
+              form.setValue("items.0.description", "فاتورة العداد التجاري 10 ايام");
+              form.setValue("items.0.meterNumber", data.meterNumber || "");
+              form.setValue("items.0.previousReading", data.previousReading || "");
+              // Leave current reading and unit price empty for user input
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching last reading:", error);
+        }
+      };
+
+      fetchLastReading();
+    }
+  }, [watchedCustomerId, invoiceType, invoice, form]);
 
   // Generate unique invoice number
   const generateInvoiceNumber = () => {

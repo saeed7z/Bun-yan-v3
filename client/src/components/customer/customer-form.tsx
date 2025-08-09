@@ -27,6 +27,7 @@ export default function CustomerForm({ customer, onSuccess }: CustomerFormProps)
       email: customer?.email || "",
       phone: customer?.phone || "",
       address: customer?.address || "",
+      meterNumber: customer?.meterNumber || "",
     },
   });
 
@@ -144,6 +145,22 @@ export default function CustomerForm({ customer, onSuccess }: CustomerFormProps)
         {form.formState.errors.address && (
           <p className="text-sm text-destructive mt-1" data-testid="error-customer-address">
             {form.formState.errors.address.message}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <Label htmlFor="meterNumber">رقم العداد التجاري</Label>
+        <Input
+          id="meterNumber"
+          {...form.register("meterNumber")}
+          placeholder="أدخل رقم العداد التجاري"
+          className="mt-1 ltr-text"
+          data-testid="input-customer-meter-number"
+        />
+        {form.formState.errors.meterNumber && (
+          <p className="text-sm text-destructive mt-1" data-testid="error-customer-meter-number">
+            {form.formState.errors.meterNumber.message}
           </p>
         )}
       </div>

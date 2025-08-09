@@ -206,6 +206,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get customer's last reading for commercial meter invoices
+  app.get("/api/customers/:id/last-reading", async (req, res) => {
+    try {
+      const customerId = req.params.id;
+      
+      // Get the customer first
+      const customer = await storage.getCustomer(customerId);
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+
+      // Get the latest commercial invoice for this customer
+      const invoices = await storage.getInvoices();
+      const customerCommercialInvoices = invoices
+        .filter((invoice: any) => invoice.customerId === customerId && invoice.type === "commercial")
+        .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      if (customerCommercialInvoices.length === 0) {
+        return res.json({ 
+          previousReading: null,
+          meterNumber: customer.meterNumber || ""
+        });
+      }
+
+      // Get the latest invoice details
+      const latestInvoice = customerCommercialInvoices[0];
+      const invoiceDetails = await storage.getInvoiceWithDetails(latestInvoice.id);
+      
+      if (!invoiceDetails || !invoiceDetails.items) {
+        return res.json({ 
+          previousReading: null,
+          meterNumber: customer.meterNumber || ""
+        });
+      }
+
+      // Find the item with meter reading (should be the first/main item)
+      const meterItem = invoiceDetails.items.find((item: any) => item.currentReading !== null);
+      
+      if (!meterItem) {
+        return res.json({ 
+          previousReading: null,
+          meterNumber: customer.meterNumber || ""
+        });
+      }
+
+      res.json({ 
+        previousReading: meterItem.currentReading,
+        meterNumber: customer.meterNumber || meterItem.meterNumber || ""
+      });
+    } catch (error) {
+      console.error("Error fetching last reading:", error);
+      res.status(500).json({ error: "Failed to fetch last reading" });
+    }
+  });
+
   // Dashboard stats
   app.get("/api/dashboard/stats", async (_req, res) => {
     try {

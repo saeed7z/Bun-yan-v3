@@ -161,11 +161,11 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
     const discount = parseFloat(watchedDiscount) || 0;
     const discountAmount = (newSubtotal * discount) / 100;
     const subtotalAfterDiscount = newSubtotal - discountAmount;
-    const newTax = subtotalAfterDiscount * 0.17; // 17% tax
-    const newTotal = subtotalAfterDiscount + newTax;
+    // Remove tax calculation
+    const newTotal = subtotalAfterDiscount;
 
     setSubtotal(newSubtotal);
-    setTax(newTax);
+    setTax(0); // Set tax to 0
     setTotal(newTotal);
   }, [watchedItems, watchedDiscount, invoiceType, form]);
 
@@ -178,9 +178,9 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
       status: invoice?.status || (invoiceType === "payment" ? "paid" : "pending"),
       type: invoiceType || "monthly",
       subtotal: subtotal.toFixed(2),
-      tax: invoiceType === "payment" ? "0" : tax.toFixed(2),
+      tax: "0", // Always 0 now
       discount: invoiceType === "payment" ? "0" : ((subtotal * (parseFloat(data.discount || "0") / 100))).toFixed(2),
-      total: invoiceType === "payment" ? subtotal.toFixed(2) : total.toFixed(2),
+      total: total.toFixed(2),
       notes: data.notes || "",
     };
 
@@ -219,7 +219,7 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
         total: (parseFloat(item.price) || 0).toFixed(2)
       })),
       subtotal: subtotal.toFixed(2),
-      tax: tax.toFixed(2),
+      tax: "0", // Always 0
       discount: ((subtotal * (parseFloat(form.watch("discount") || "0") / 100))).toFixed(2),
       total: total.toFixed(2),
       notes: form.watch("notes") || ""
@@ -307,8 +307,7 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
 
     <div class="totals">
         <div class="total-row"><strong>المجموع الجزئي: ﷼${parseFloat(invoiceData.subtotal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
-        <div class="total-row"><strong>الضريبة: ﷼${parseFloat(invoiceData.tax).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
-        <div class="total-row"><strong>الخصم: ﷼${parseFloat(invoiceData.discount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
+        ${parseFloat(invoiceData.discount) > 0 ? `<div class="total-row"><strong>الخصم: ﷼${parseFloat(invoiceData.discount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>` : ''}
         <div class="total-row" style="font-size: 18px;"><strong>المجموع الإجمالي: ﷼${parseFloat(invoiceData.total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
     </div>
 
@@ -546,10 +545,7 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
                   data-testid="input-discount"
                 />
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">الضريبة (17%):</span>
-                <span className="font-medium" data-testid="text-tax">﷼{tax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-              </div>
+
               <div className="border-t border-gray-200 pt-3">
                 <div className="flex justify-between text-lg font-semibold">
                   <span>المجموع الإجمالي:</span>

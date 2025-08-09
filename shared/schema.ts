@@ -77,3 +77,15 @@ export type CustomerWithStats = Customer & {
   totalAmount: string;
   accountBalance: string;
 };
+
+// Special schema for invoice creation that accepts date as string
+export const insertInvoiceSchemaForAPI = insertInvoiceSchema.extend({
+  date: z.string().transform((str) => new Date(str)),
+});
+
+// Combined schema for creating invoice with items
+export const createInvoiceWithItemsSchema = z.object({
+  invoice: insertInvoiceSchemaForAPI,
+  items: z.array(insertInvoiceItemSchema),
+  isPayment: z.boolean().optional().default(false),
+});

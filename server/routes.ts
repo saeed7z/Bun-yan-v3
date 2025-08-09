@@ -1,17 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertCustomerSchema, insertInvoiceSchema, insertInvoiceItemSchema } from "@shared/schema";
+import { insertCustomerSchema, insertInvoiceSchema, insertInvoiceItemSchema, createInvoiceWithItemsSchema } from "@shared/schema";
 import { z } from "zod";
-
-const createInvoiceWithItemsSchema = z.object({
-  invoice: insertInvoiceSchema,
-  items: z.array(insertInvoiceItemSchema.omit({ invoiceId: true }).extend({
-    // Allow price to be optional for commercial invoices
-    price: z.string().optional().default("0")
-  })),
-  isPayment: z.boolean().optional().default(false)
-});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   

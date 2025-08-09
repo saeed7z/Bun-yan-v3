@@ -283,7 +283,7 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
     const invoiceData = {
       number: invoice?.number || generateInvoiceNumber(),
       customerId: data.customerId,
-      date: new Date(data.date),
+      date: data.date, // Send as string, let backend handle conversion
       dueDate: null,
       status: invoice?.status || (invoiceType === "payment" ? "paid" : "pending"),
       type: invoiceType || "monthly",

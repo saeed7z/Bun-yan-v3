@@ -162,40 +162,50 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
     watchedItems?.forEach((item: any, index: number) => {
       // For commercial meter items, calculate based on meter readings
       if (invoiceType === "commercial") {
-        const previousReading = parseFloat(item.previousReading) || 0;
-        const currentReading = parseFloat(item.currentReading) || 0;
-        const unitPrice = parseFloat(item.unitPrice) || 0;
+        const previousReading = parseFloat(item.previousReading?.replace(/,/g, '') || "0");
+        const currentReading = parseFloat(item.currentReading?.replace(/,/g, '') || "0");
+        const unitPrice = parseFloat(item.unitPrice?.replace(/,/g, '') || "0");
+        
+        console.log(`Item ${index}:`, {
+          previousReading,
+          currentReading,
+          unitPrice,
+          item
+        });
         
         // Calculate if all required fields have values
-        if (previousReading >= 0 && currentReading > 0 && unitPrice > 0 && currentReading >= previousReading) {
+        if (!isNaN(previousReading) && !isNaN(currentReading) && !isNaN(unitPrice) && 
+            currentReading > 0 && unitPrice > 0 && currentReading >= previousReading) {
           const consumption = currentReading - previousReading;
           const calculatedTotal = consumption * unitPrice;
           
-          // Update the price field with calculated total
-          const currentPrice = parseFloat(item.price) || 0;
+          console.log(`Calculation: ${currentReading} - ${previousReading} = ${consumption} × ${unitPrice} = ${calculatedTotal}`);
+          
+          // Update the price field with calculated total immediately
+          const currentPrice = parseFloat(item.price?.replace(/,/g, '') || "0");
           if (Math.abs(currentPrice - calculatedTotal) > 0.01) {
-            // Use setTimeout to avoid infinite loop
-            setTimeout(() => {
-              form.setValue(`items.${index}.price`, calculatedTotal.toFixed(2), { shouldValidate: false });
-            }, 0);
+            form.setValue(`items.${index}.price`, calculatedTotal.toFixed(2), { shouldValidate: false });
           }
           newSubtotal += calculatedTotal;
         } else {
+          console.log(`Manual price for item ${index}:`, item.price);
           // Use manual price if calculation is not possible
-          const price = parseFloat(item.price) || 0;
+          const price = parseFloat(item.price?.replace(/,/g, '') || "0");
           newSubtotal += price;
         }
       } else {
         // Regular calculation for non-meter items
-        const price = parseFloat(item.price) || 0;
+        const price = parseFloat(item.price?.replace(/,/g, '') || "0");
         newSubtotal += price;
       }
     });
 
-    const discount = parseFloat(watchedDiscount) || 0;
+    const discount = parseFloat(watchedDiscount?.replace(/,/g, '') || "0");
     const discountAmount = (newSubtotal * discount) / 100;
     const subtotalAfterDiscount = newSubtotal - discountAmount;
     const newTotal = subtotalAfterDiscount;
+
+    console.log('Final totals:', { newSubtotal, discount, newTotal });
 
     setSubtotal(newSubtotal);
     setTax(0);

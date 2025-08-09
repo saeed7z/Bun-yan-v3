@@ -2,6 +2,13 @@
 
 This is a full-stack invoice management system built with React, Express.js, and PostgreSQL. The application provides comprehensive functionality for managing customers, invoices, and invoice items with a modern Arabic-language interface using shadcn/ui components. The system features a dashboard with business analytics, customer management, and invoice creation/tracking capabilities.
 
+## Recent Changes (January 2025)
+
+- **Document Number Removal**: Removed document number field from monthly invoices (kept for commercial invoices)
+- **Number Formatting**: Added real-time comma formatting for all price inputs (e.g., 30,000, 100,000, 1,000,000)
+- **Tax Removal**: Completely removed tax calculations (17% VAT) from all invoice types
+- **UI Improvements**: Created FormattedNumberInput component for consistent number formatting across the application
+
 # User Preferences
 
 Preferred communication style: Simple, everyday language.

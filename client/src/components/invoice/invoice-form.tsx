@@ -80,6 +80,34 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
   const watchedDiscount = form.watch("discount") || "0";
   const watchedCustomerId = form.watch("customerId");
 
+  // Helper function to calculate meter reading total
+  const calculateMeterTotal = (index: number, newCurrentReading?: string, newUnitPrice?: string) => {
+    const item = form.getValues(`items.${index}`);
+    const previousReading = parseFloat(item.previousReading?.replace(/,/g, '') || "0");
+    const currentReading = parseFloat((newCurrentReading || item.currentReading)?.replace(/,/g, '') || "0");
+    const unitPrice = parseFloat((newUnitPrice || item.unitPrice)?.replace(/,/g, '') || "0");
+    
+    console.log(`Calculating for item ${index}:`, { previousReading, currentReading, unitPrice });
+    
+    if (previousReading >= 0 && currentReading >= 0 && unitPrice > 0) {
+      let consumption;
+      // Handle case where meter was reset (current reading is lower than previous)
+      if (currentReading < previousReading) {
+        // Ask user for clarification or assume meter was reset
+        consumption = currentReading; // Use current reading as consumption
+        console.log(`Meter reset detected: using current reading ${currentReading} as consumption`);
+      } else {
+        consumption = currentReading - previousReading;
+      }
+      
+      const calculatedTotal = consumption * unitPrice;
+      console.log(`Result: consumption=${consumption} × ${unitPrice} = ${calculatedTotal}`);
+      form.setValue(`items.${index}.price`, calculatedTotal.toFixed(2));
+      return calculatedTotal;
+    }
+    return 0;
+  };
+
   // Auto-fill commercial meter data when customer is selected
   useEffect(() => {
     if (watchedCustomerId && invoiceType === "commercial" && !invoice) {
@@ -173,13 +201,20 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
           item
         });
         
-        // Calculate if all required fields have values
+        // Calculate if we have valid readings and unit price
         if (!isNaN(previousReading) && !isNaN(currentReading) && !isNaN(unitPrice) && 
-            currentReading > 0 && unitPrice > 0 && currentReading >= previousReading) {
-          const consumption = currentReading - previousReading;
-          const calculatedTotal = consumption * unitPrice;
+            previousReading >= 0 && currentReading >= 0 && unitPrice > 0) {
+          let consumption;
+          // Handle case where meter was reset (current reading is lower than previous)
+          if (currentReading < previousReading) {
+            consumption = currentReading; // Use current reading as consumption
+            console.log(`Meter reset detected: using current reading ${currentReading} as consumption`);
+          } else {
+            consumption = currentReading - previousReading;
+          }
           
-          console.log(`Calculation: ${currentReading} - ${previousReading} = ${consumption} × ${unitPrice} = ${calculatedTotal}`);
+          const calculatedTotal = consumption * unitPrice;
+          console.log(`Auto-calculation: consumption=${consumption} × ${unitPrice} = ${calculatedTotal}`);
           
           // Update the price field with calculated total immediately
           const currentPrice = parseFloat(item.price?.replace(/,/g, '') || "0");
@@ -457,7 +492,12 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
                   <div className="col-span-1">
                     <FormattedNumberInput
                       value={form.watch(`items.${index}.currentReading`)}
-                      onChange={(value) => form.setValue(`items.${index}.currentReading`, value)}
+                      onChange={(value) => {
+                        form.setValue(`items.${index}.currentReading`, value);
+                        if (invoiceType === "commercial") {
+                          calculateMeterTotal(index, value);
+                        }
+                      }}
                       placeholder="القراءة الحالية"
                       className="text-sm"
                       data-testid={`input-item-current-reading-${index}`}
@@ -466,7 +506,12 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
                   <div className="col-span-2">
                     <FormattedNumberInput
                       value={form.watch(`items.${index}.unitPrice`)}
-                      onChange={(value) => form.setValue(`items.${index}.unitPrice`, value)}
+                      onChange={(value) => {
+                        form.setValue(`items.${index}.unitPrice`, value);
+                        if (invoiceType === "commercial") {
+                          calculateMeterTotal(index, undefined, value);
+                        }
+                      }}
                       placeholder="قيمة الوحدة (﷼)"
                       className="text-sm"
                       data-testid={`input-item-unit-price-${index}`}

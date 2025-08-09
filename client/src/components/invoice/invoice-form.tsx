@@ -161,22 +161,27 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
     
     watchedItems?.forEach((item: any, index: number) => {
       // For commercial meter items, calculate based on meter readings
-      if (invoiceType === "commercial" && item.previousReading && item.currentReading && item.unitPrice) {
+      if (invoiceType === "commercial") {
         const previousReading = parseFloat(item.previousReading) || 0;
         const currentReading = parseFloat(item.currentReading) || 0;
         const unitPrice = parseFloat(item.unitPrice) || 0;
         
-        if (currentReading >= previousReading && unitPrice > 0) {
+        // Calculate if all required fields have values
+        if (previousReading >= 0 && currentReading > 0 && unitPrice > 0 && currentReading >= previousReading) {
           const consumption = currentReading - previousReading;
           const calculatedTotal = consumption * unitPrice;
           
-          // Update the price field with calculated total without triggering infinite loop
+          // Update the price field with calculated total
           const currentPrice = parseFloat(item.price) || 0;
           if (Math.abs(currentPrice - calculatedTotal) > 0.01) {
-            form.setValue(`items.${index}.price`, calculatedTotal.toFixed(2), { shouldValidate: false });
+            // Use setTimeout to avoid infinite loop
+            setTimeout(() => {
+              form.setValue(`items.${index}.price`, calculatedTotal.toFixed(2), { shouldValidate: false });
+            }, 0);
           }
           newSubtotal += calculatedTotal;
         } else {
+          // Use manual price if calculation is not possible
           const price = parseFloat(item.price) || 0;
           newSubtotal += price;
         }
@@ -190,11 +195,10 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
     const discount = parseFloat(watchedDiscount) || 0;
     const discountAmount = (newSubtotal * discount) / 100;
     const subtotalAfterDiscount = newSubtotal - discountAmount;
-    // Remove tax calculation
     const newTotal = subtotalAfterDiscount;
 
     setSubtotal(newSubtotal);
-    setTax(0); // Set tax to 0
+    setTax(0);
     setTotal(newTotal);
   }, [watchedItems, watchedDiscount, invoiceType, form]);
 
@@ -459,14 +463,33 @@ export default function InvoiceForm({ invoice, invoiceType = "monthly", onSucces
                     />
                   </div>
                   <div className="col-span-2">
-                    <FormattedNumberInput
-                      value={form.watch(`items.${index}.price`)}
-                      onChange={(value) => form.setValue(`items.${index}.price`, value)}
-                      placeholder="الإجمالي (﷼)"
-                      className="text-sm bg-gray-100"
-                      readOnly
-                      data-testid={`input-item-price-${index}`}
-                    />
+                    <div className="space-y-1">
+                      <FormattedNumberInput
+                        value={form.watch(`items.${index}.price`)}
+                        onChange={(value) => form.setValue(`items.${index}.price`, value)}
+                        placeholder="الإجمالي (﷼)"
+                        className="text-sm bg-gray-100"
+                        readOnly
+                        data-testid={`input-item-price-${index}`}
+                      />
+                      {/* Show calculation formula */}
+                      {(() => {
+                        const item = form.watch(`items.${index}`);
+                        const previousReading = parseFloat(item?.previousReading || "0");
+                        const currentReading = parseFloat(item?.currentReading || "0");
+                        const unitPrice = parseFloat(item?.unitPrice || "0");
+                        
+                        if (previousReading >= 0 && currentReading > 0 && unitPrice > 0 && currentReading >= previousReading) {
+                          const consumption = currentReading - previousReading;
+                          return (
+                            <div className="text-xs text-gray-500 text-center">
+                              ({currentReading} - {previousReading}) × {unitPrice} = {consumption} × {unitPrice}
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
                   </div>
                   <div className="col-span-1">
                     {fields.length > 1 && (
